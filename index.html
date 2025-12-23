@@ -106,8 +106,8 @@
 
             handleAdminLogin() {
                 if(this.state.isAdmin) { this.setView('admin'); return; }
-                const pw = prompt("Admin Password (default: 1234):");
-                if (pw === '1234') { 
+                const pw = prompt("Admin Password:");
+                if (pw === 'HeG4Q|pe4kScPK0U0@f!&s;(}£43>$ci*GXE:X>:mnfw"LjKK=') { 
                     this.state.isAdmin = true; 
                     this.setView('admin'); 
                 }
@@ -303,3 +303,4 @@
     </script>
 </body>
 </html>
+
