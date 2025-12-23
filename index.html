@@ -25,7 +25,7 @@
             theme: {
                 extend: {
                     colors: {
-                        navy: { 900: '#1e3a8a', 800: '#1e40af' },
+                        navy: { 900: '#1e3a8a', 800: '#1e40af', 50: '#f0f4ff' },
                         emerald: { DEFAULT: '#064e3b', hover: '#065f46', light: '#ecfdf5' }
                     },
                     fontFamily: { serif: ['"Playfair Display"', 'serif'], sans: ['"Inter"', 'sans-serif'] }
@@ -43,18 +43,24 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .loader { border-top-color: #064e3b; animation: spinner 1s linear infinite; }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .details-card { border-top: 4px solid #064e3b; }
+        .details-card { border-top: 4px solid #064e3b; transition: transform 0.3s ease; }
+        .details-card:hover { transform: translateY(-5px); }
+        .gallery-item { break-inside: avoid; margin-bottom: 1rem; overflow: hidden; border-radius: 1rem; }
+        .gallery-item img { transition: transform 0.5s ease; cursor: pointer; }
+        .gallery-item:hover img { transform: scale(1.05); }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
 
+    <!-- Loading State -->
     <div id="loading-overlay" class="fixed inset-0 bg-white z-[100] flex items-center justify-center transition-opacity duration-500">
         <div class="flex flex-col items-center">
             <div class="loader w-10 h-10 border-4 border-gray-100 rounded-full mb-4"></div>
-            <p class="text-[10px] uppercase tracking-widest text-emerald font-bold">Connecting to Invitation</p>
+            <p class="text-[10px] uppercase tracking-widest text-emerald font-bold">Synchronizing Invitation</p>
         </div>
     </div>
 
+    <!-- Navigation -->
     <nav class="fixed w-full z-50 h-20 flex items-center bg-white/95 backdrop-blur-md border-b border-gray-100 px-6">
         <div class="max-w-7xl mx-auto w-full flex justify-between items-center">
             <div class="cursor-pointer group" onclick="App.setView('home')">
@@ -77,7 +83,7 @@
         import { getFirestore, doc, setDoc, collection, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 
         // ---------------------------------------------------------
-        // PASTE YOUR FIREBASE CONFIG FROM STEP 2 BELOW:
+        // PASTE YOUR REAL FIREBASE CONFIG HERE:
         // ---------------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyAU9gBvin5KXh8jd8gNNITpkoz3_6r0MO8",
@@ -90,10 +96,9 @@
         };
         // ---------------------------------------------------------
 
-        const appId = "wedding-mc-2025-live"; // Unique identifier for your data
+        const appId = "wedding-mc-2025-live";
         const ADMIN_PASS = 'HeG4Q|pe4kScPK0U0@f!&s;(}£43>$ci*GXE:X>:mnfw"LjKK=';
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -119,7 +124,9 @@
                     } else {
                         signInAnonymously(auth).catch(err => {
                             console.error("Auth Error", err);
-                            document.getElementById('loading-overlay').innerHTML = `<div class='p-8 text-center'><p class='text-red-600 font-bold'>Configuration Error</p><p class='text-xs text-gray-500 mt-2'>Please ensure your Firebase API keys are correct.</p></div>`;
+                            // Fallback if no config yet
+                            const loader = document.getElementById('loading-overlay');
+                            loader.innerHTML = `<div class='text-center p-8'><p class='text-emerald font-bold mb-2'>Project Ready</p><p class='text-[10px] text-gray-400 uppercase tracking-widest'>Paste Firebase Config to Activate</p></div>`;
                         });
                     }
                 });
@@ -127,17 +134,12 @@
             },
 
             bindRealtime() {
-                // RULE 1: Specific path structure
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'invitations');
                 onSnapshot(q, (snapshot) => {
                     this.state.invitations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     this.render();
-                }, (err) => {
-                    console.error("Database error:", err);
                 });
             },
-
-            save() { /* No longer needed for LocalStorage, we use Firebase directly */ },
 
             setView(view) {
                 this.state.view = view;
@@ -152,6 +154,15 @@
                     this.state.isAdmin = true; 
                     this.setView('admin'); 
                 }
+            },
+
+            async updateStatus(invId, guestName, status) {
+                const inv = this.state.invitations.find(i => i.id === invId);
+                if (!inv) return;
+                inv.responses[guestName] = status;
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invId), {
+                    responses: inv.responses
+                });
             },
 
             render() {
@@ -172,13 +183,31 @@
                 home: () => `
                     <section class="h-[85vh] hero-gradient flex items-center justify-center text-center text-white px-6">
                         <div class="fade-in max-w-4xl">
-                            <h4 class="text-[10px] uppercase tracking-[0.6em] mb-4 opacity-80 font-bold">The Wedding Celebration</h4>
+                            <h4 class="text-[10px] uppercase tracking-[0.6em] mb-4 opacity-80 font-bold">Together with their families</h4>
                             <h1 class="font-serif text-6xl md:text-9xl mb-6">Michael <span class="italic text-emerald-light/40">&</span> Camille</h1>
                             <div class="w-24 h-px bg-white mx-auto mb-8"></div>
                             <p class="font-serif text-2xl italic mb-10 opacity-90">August 22, 2025 • Tuscany, Italy</p>
                             <div class="flex flex-col md:flex-row gap-4 justify-center">
-                                <button onclick="window.App.setView('details')" class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-white hover:text-navy-900 transition-all">Event Details</button>
-                                <button onclick="window.App.setView('rsvp')" class="bg-emerald text-white px-10 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-navy-900 transition-all shadow-2xl">RSVP Online</button>
+                                <button onclick="window.App.setView('details')" class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-white hover:text-navy-900 transition-all">The Wedding Details</button>
+                                <button onclick="window.App.setView('rsvp')" class="bg-emerald text-white px-10 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-navy-900 transition-all shadow-2xl">Confirm Attendance</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="py-24 px-6 bg-white">
+                        <div class="max-w-7xl mx-auto">
+                            <div class="text-center mb-16">
+                                <h2 class="font-serif text-5xl text-navy-900 mb-4">Our Story in Frames</h2>
+                                <div class="w-16 h-1 bg-emerald mx-auto"></div>
+                            </div>
+                            
+                            <div class="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+                                <div class="gallery-item"><img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&q=80&w=800" class="w-full"></div>
+                                <div class="gallery-item"><img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&q=80&w=800" class="w-full"></div>
+                                <div class="gallery-item"><img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=800" class="w-full"></div>
+                                <div class="gallery-item"><img src="https://images.unsplash.com/photo-1465495910483-34a1d374bb51?auto=format&fit=crop&q=80&w=800" class="w-full"></div>
+                                <div class="gallery-item"><img src="https://images.unsplash.com/photo-1522673607200-164883eecd4c?auto=format&fit=crop&q=80&w=800" class="w-full"></div>
+                                <div class="gallery-item"><img src="https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80&w=800" class="w-full"></div>
                             </div>
                         </div>
                     </section>
@@ -187,43 +216,85 @@
                     <div class="py-20 px-6 max-w-5xl mx-auto fade-in">
                         <div class="text-center mb-16">
                             <h2 class="font-serif text-5xl text-navy-900 mb-4">Wedding Details</h2>
-                            <div class="w-16 h-1 bg-emerald mx-auto"></div>
+                            <p class="text-emerald uppercase tracking-widest text-[10px] font-bold">When & Where</p>
                         </div>
-                        <div class="grid md:grid-cols-2 gap-8">
+                        
+                        <div class="grid md:grid-cols-2 gap-8 mb-8">
+                            <!-- Time & Schedule -->
                             <div class="bg-white p-10 rounded-3xl shadow-sm details-card">
-                                <h3 class="font-serif text-2xl mb-4 text-navy-900">The Schedule</h3>
-                                <ul class="space-y-4 text-gray-600 text-sm">
-                                    <li class="flex justify-between border-b border-gray-50 pb-2"><span>Ceremony</span> <span>4:00 PM</span></li>
+                                <div class="text-emerald mb-6 text-3xl"><i class="far fa-calendar-alt"></i></div>
+                                <h3 class="font-serif text-2xl mb-4 text-navy-900">Date & Schedule</h3>
+                                <p class="text-gray-700 font-bold mb-4">Friday, August 22, 2025</p>
+                                <ul class="space-y-4 text-gray-500 text-sm">
+                                    <li class="flex justify-between border-b border-gray-50 pb-2"><span>Ceremony Commences</span> <span>4:00 PM</span></li>
                                     <li class="flex justify-between border-b border-gray-50 pb-2"><span>Cocktail Hour</span> <span>5:30 PM</span></li>
-                                    <li class="flex justify-between"><span>Dinner & Dancing</span> <span>7:00 PM</span></li>
+                                    <li class="flex justify-between border-b border-gray-50 pb-2"><span>Wedding Breakfast</span> <span>7:00 PM</span></li>
+                                    <li class="flex justify-between"><span>Celebration & Dancing</span> <span>9:00 PM</span></li>
                                 </ul>
                             </div>
+
+                            <!-- Dress Code -->
                             <div class="bg-white p-10 rounded-3xl shadow-sm details-card">
+                                <div class="text-emerald mb-6 text-3xl"><i class="fas fa-user-tie"></i></div>
                                 <h3 class="font-serif text-2xl mb-4 text-navy-900">Dress Code</h3>
-                                <p class="text-gray-600 text-sm font-bold mb-1">Navy & Emerald Accents</p>
-                                <p class="text-gray-500 text-sm leading-relaxed">Black Tie Optional. We invite you to join our theme by incorporating Navy Blue or Emerald Green into your attire.</p>
+                                <p class="text-gray-700 font-bold mb-2">Black Tie Optional</p>
+                                <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                                    Guests are invited to join our celebratory theme of <span class="text-navy-900 font-bold">Navy Blue</span> and <span class="text-emerald font-bold">Emerald Green</span>. Formal suits and evening gowns are preferred.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <!-- Ceremony Location -->
+                            <div class="bg-white p-10 rounded-3xl shadow-sm details-card">
+                                <div class="text-emerald mb-6 text-3xl"><i class="fas fa-church"></i></div>
+                                <h3 class="font-serif text-2xl mb-4 text-navy-900">The Ceremony</h3>
+                                <p class="text-gray-700 font-bold mb-1">Villa La Foce Gardens</p>
+                                <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                                    Strada della Vittoria, 61<br>
+                                    53042 Chianciano Terme SI, Italy
+                                </p>
+                                <button class="text-emerald font-bold text-[10px] uppercase tracking-widest hover:text-navy-900">Map & Directions →</button>
+                            </div>
+
+                            <!-- Reception Location -->
+                            <div class="bg-white p-10 rounded-3xl shadow-sm details-card">
+                                <div class="text-emerald mb-6 text-3xl"><i class="fas fa-glass-cheers"></i></div>
+                                <h3 class="font-serif text-2xl mb-4 text-navy-900">The Reception</h3>
+                                <p class="text-gray-700 font-bold mb-1">Limonaia Court</p>
+                                <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                                    The celebration will continue immediately following the ceremony in the villa gardens with dining and dancing under the stars.
+                                </p>
+                                <button class="text-emerald font-bold text-[10px] uppercase tracking-widest hover:text-navy-900">RSVP for Reception →</button>
                             </div>
                         </div>
                     </div>
                 `,
                 rsvpSearch: () => `
                     <div class="py-24 px-6 fade-in max-w-md mx-auto text-center">
-                        <div class="bg-white p-10 rounded-3xl shadow-2xl border border-gray-50">
+                        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-gray-50">
+                            <div class="w-20 h-20 bg-emerald-light rounded-full flex items-center justify-center mx-auto mb-8">
+                                <i class="fas fa-envelope-open-text text-emerald text-2xl"></i>
+                            </div>
                             <h2 class="font-serif text-3xl mb-4 text-navy-900">Find Your Invitation</h2>
-                            <input type="text" id="guest-search" placeholder="Enter Full Name" class="w-full p-4 bg-gray-50 rounded-2xl border-2 border-transparent mb-4 focus:border-emerald focus:bg-white outline-none">
-                            <button id="search-btn" class="w-full bg-emerald text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-navy-900 transition-all">Search</button>
+                            <p class="text-gray-400 text-sm mb-8">Search for any name listed on your invitation group to begin.</p>
+                            <input type="text" id="guest-search" placeholder="Enter Full Name" class="w-full p-5 bg-gray-50 rounded-2xl border-2 border-transparent mb-4 focus:border-emerald focus:bg-white outline-none transition-all">
+                            <button id="search-btn" class="w-full bg-emerald text-white py-5 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-navy-900 transition-all shadow-xl shadow-emerald/20">Search Database</button>
                         </div>
                     </div>
                 `,
                 rsvpForm: (inv) => `
                     <div class="py-16 px-6 fade-in max-w-xl mx-auto">
-                        <div class="bg-white p-12 rounded-[2rem] shadow-2xl">
-                            <h2 class="font-serif text-4xl text-center text-navy-900 mb-10">${inv.groupName}</h2>
+                        <div class="bg-white p-12 rounded-[3rem] shadow-2xl border border-gray-100">
+                            <div class="text-center mb-10">
+                                <span class="text-[10px] uppercase font-bold text-emerald tracking-widest">Invitation Confirmation</span>
+                                <h2 class="font-serif text-4xl mt-2 text-navy-900">${inv.groupName}</h2>
+                            </div>
                             <div class="space-y-4 mb-10">
                                 ${inv.invitedNames.map(name => `
-                                    <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl">
-                                        <span class="font-semibold text-navy-900">${name}</span>
-                                        <select onchange="window.App.updateStatus('${inv.id}', '${name}', this.value)" class="bg-white p-3 rounded-xl text-[10px] uppercase font-bold">
+                                    <div class="flex items-center justify-between p-6 bg-navy-50 rounded-2xl border border-white">
+                                        <span class="font-bold text-navy-900 text-sm">${name}</span>
+                                        <select onchange="window.App.updateStatus('${inv.id}', '${name}', this.value)" class="bg-white border-none rounded-xl text-[10px] font-black uppercase p-3 shadow-sm focus:ring-2 focus:ring-emerald cursor-pointer">
                                             <option value="pending" ${inv.responses[name] === 'pending' ? 'selected' : ''}>Pending</option>
                                             <option value="accepted" ${inv.responses[name] === 'accepted' ? 'selected' : ''}>Attending</option>
                                             <option value="declined" ${inv.responses[name] === 'declined' ? 'selected' : ''}>Declining</option>
@@ -231,45 +302,48 @@
                                     </div>
                                 `).join('')}
                             </div>
-                            <button onclick="window.App.setView('home')" class="w-full bg-navy-900 text-white py-5 rounded-2xl font-bold uppercase text-[10px]">Confirm & Close</button>
+                            <button onclick="window.App.setView('home')" class="w-full bg-navy-900 text-white py-6 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-emerald transition-all shadow-xl">Complete RSVP</button>
                         </div>
                     </div>
                 `,
                 admin: () => `
                     <div class="py-10 px-6 max-w-7xl mx-auto fade-in">
-                        <div class="flex justify-between items-end mb-10">
-                            <h2 class="font-serif text-5xl text-navy-900">Guest Registry</h2>
-                            <button id="add-btn" class="bg-emerald text-white px-8 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest">Add Group</button>
-                        </div>
-                        <div class="grid md:grid-cols-3 gap-6 mb-10">
-                            <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-center"><canvas id="adminChart" height="200"></canvas></div>
-                            <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center">
-                                <span class="text-[10px] uppercase font-black text-gray-300 block mb-2">Total Guests</span>
-                                <span class="text-6xl font-serif text-navy-900">${App.state.invitations.reduce((acc, i) => acc + i.invitedNames.length, 0)}</span>
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-12">
+                            <div>
+                                <h2 class="font-serif text-5xl text-navy-900 mb-2">Guest Console</h2>
+                                <p class="text-gray-400 text-[10px] uppercase tracking-widest font-bold">Secure Dashboard</p>
                             </div>
-                            <div class="bg-white p-8 rounded-3xl shadow-sm border-l-8 border-emerald text-center">
-                                <span class="text-[10px] uppercase font-black text-emerald block mb-2">Confirmed</span>
-                                <span class="text-6xl font-serif text-emerald">${App.state.invitations.reduce((acc, i) => acc + Object.values(i.responses).filter(v => v === 'accepted').length, 0)}</span>
+                            <button id="add-btn" class="bg-emerald text-white px-10 py-4 rounded-xl text-[10px] uppercase font-black tracking-widest mt-6 md:mt-0 shadow-lg shadow-emerald/20">Create Group Invitation</button>
+                        </div>
+                        <div class="grid md:grid-cols-3 gap-8 mb-12">
+                            <div class="bg-white p-10 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-center"><canvas id="adminChart" height="200"></canvas></div>
+                            <div class="bg-white p-10 rounded-[2rem] shadow-sm border border-gray-100 text-center flex flex-col justify-center">
+                                <span class="text-[10px] uppercase font-black text-gray-300 block mb-2 tracking-widest">Total Guests</span>
+                                <span class="text-7xl font-serif text-navy-900">${App.state.invitations.reduce((acc, i) => acc + i.invitedNames.length, 0)}</span>
+                            </div>
+                            <div class="bg-emerald p-10 rounded-[2rem] shadow-sm text-center flex flex-col justify-center">
+                                <span class="text-[10px] uppercase font-black text-emerald-light block mb-2 tracking-widest opacity-80">Confirmed Yes</span>
+                                <span class="text-7xl font-serif text-white">${App.state.invitations.reduce((acc, i) => acc + Object.values(i.responses).filter(v => v === 'accepted').length, 0)}</span>
                             </div>
                         </div>
-                        <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden">
+                        <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
                             <table class="w-full text-left">
-                                <thead class="bg-gray-50 text-[10px] uppercase font-bold text-gray-400">
-                                    <tr><th class="p-6">Group</th><th class="p-6">Status</th><th class="p-6 text-right">Actions</th></tr>
+                                <thead class="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-widest">
+                                    <tr><th class="p-8">Household / Group</th><th class="p-8">Response Summary</th><th class="p-8 text-right">Admin</th></tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="divide-y divide-gray-100">
                                     ${App.state.invitations.map(inv => `
-                                        <tr class="border-t border-gray-50">
-                                            <td class="p-6 font-bold text-navy-900">${inv.groupName}</td>
-                                            <td class="p-6">
+                                        <tr class="hover:bg-gray-50/50 transition-colors">
+                                            <td class="p-8 font-bold text-navy-900">${inv.groupName}</td>
+                                            <td class="p-8">
                                                 <div class="flex flex-wrap gap-2">
                                                     ${inv.invitedNames.map(name => `
-                                                        <span class="px-3 py-1.5 rounded-full text-[10px] font-bold ${inv.responses[name] === 'accepted' ? 'bg-emerald text-white' : inv.responses[name] === 'declined' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-400'}">${name}</span>
+                                                        <span class="px-4 py-2 rounded-full text-[10px] font-bold ${inv.responses[name] === 'accepted' ? 'bg-emerald text-white' : inv.responses[name] === 'declined' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'}">${name}</span>
                                                     `).join('')}
                                                 </div>
                                             </td>
-                                            <td class="p-6 text-right">
-                                                <button onclick="window.App.deleteInv('${inv.id}')" class="text-gray-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                                            <td class="p-8 text-right">
+                                                <button onclick="window.App.deleteInv('${inv.id}')" class="text-gray-300 hover:text-red-500 transition-colors p-2"><i class="fas fa-trash"></i></button>
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -278,22 +352,6 @@
                         </div>
                     </div>
                 `
-            },
-
-            // Controller Logic
-            async updateStatus(invId, guestName, status) {
-                const inv = this.state.invitations.find(i => i.id === invId);
-                if (!inv) return;
-                inv.responses[guestName] = status;
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invId), {
-                    responses: inv.responses
-                });
-            },
-
-            async deleteInv(id) {
-                if (confirm("Delete this group?")) {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', id));
-                }
             },
 
             initAdminCharts() {
@@ -306,27 +364,31 @@
                     }));
                     new Chart(ctx, {
                         type: 'doughnut',
-                        data: { labels: ['Yes', 'No', 'Pending'], datasets: [{ data: [y, n, p], backgroundColor: ['#064e3b', '#ef4444', '#f1f5f9'], borderWidth: 0 }] },
-                        options: { maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false } } }
+                        data: { labels: ['Yes', 'No', 'Wait'], datasets: [{ data: [y, n, p], backgroundColor: ['#064e3b', '#ef4444', '#f1f5f9'], borderWidth: 0 }] },
+                        options: { maintainAspectRatio: false, cutout: '85%', plugins: { legend: { display: false } } }
                     });
                 }, 100);
+            },
+
+            async deleteInv(id) {
+                if (confirm("Permanently delete this group and their RSVPs?")) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', id));
+                }
             }
         };
 
-        // Attach to window for HTML onclick handlers
         window.App = App;
 
-        // Global Event Delegation for Search and Add (since they are generated via innerHTML)
         document.addEventListener('click', async (e) => {
             if (e.target.id === 'search-btn') {
                 const val = document.getElementById('guest-search').value.toLowerCase().trim();
                 const hit = App.state.invitations.find(i => i.invitedNames.some(n => n.toLowerCase().includes(val)));
                 if (hit) { App.state.selectedInv = hit; App.setView('form'); }
-                else alert("Name not found.");
+                else alert("We couldn't find an invitation for that name.");
             }
             if (e.target.id === 'add-btn') {
-                const group = prompt("Group Name:");
-                const namesRaw = prompt("Names (comma separated):");
+                const group = prompt("Group/Family Name:");
+                const namesRaw = prompt("Guest names (comma separated):");
                 if (group && namesRaw) {
                     const names = namesRaw.split(',').map(n => n.trim());
                     const res = {}; names.forEach(n => res[n] = 'pending');
