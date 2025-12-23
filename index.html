@@ -10,16 +10,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <script type="importmap">
-        {
-          "imports": {
-            "firebase/app": "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js",
-            "firebase/auth": "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js",
-            "firebase/firestore": "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js"
-          }
-        }
-    </script>
-
     <script>
         tailwind.config = {
             theme: {
@@ -47,6 +37,7 @@
 </head>
 <body class="flex flex-col min-h-screen">
 
+    <!-- Simple Loading State -->
     <div id="loading-overlay" class="fixed inset-0 bg-white z-[100] flex items-center justify-center transition-opacity duration-500">
         <div class="flex flex-col items-center">
             <div class="loader w-10 h-10 border-4 border-gray-100 rounded-full mb-4"></div>
@@ -54,37 +45,25 @@
         </div>
     </div>
 
+    <!-- Navigation -->
     <nav class="fixed w-full z-50 h-20 flex items-center bg-white/90 backdrop-blur-md border-b border-gray-100 px-6">
         <div class="max-w-7xl mx-auto w-full flex justify-between items-center">
             <div class="cursor-pointer group" onclick="window.location.reload()">
                 <span class="font-serif text-2xl font-bold text-midnight-900">M<span class="text-champagne group-hover:text-midnight-900 transition-colors">&</span>C</span>
             </div>
-            <div id="nav-links" class="flex items-center space-x-6"></div>
+            <div id="nav-links" class="flex items-center space-x-6">
+                <button onclick="App.setView('home')" class="text-[10px] uppercase font-bold text-gray-500 hover:text-midnight-900">Home</button>
+                <button onclick="App.setView('rsvp')" class="bg-midnight-900 text-white px-5 py-2 rounded-full text-[10px] uppercase font-bold hover:bg-champagne transition-all">RSVP</button>
+                <button onclick="App.handleAdminLogin()" class="text-gray-300 hover:text-midnight-900"><i class="fas fa-lock text-xs"></i></button>
+            </div>
         </div>
     </nav>
 
     <main id="app-content" class="flex-grow pt-20"></main>
 
-    <script type="module">
-        import { initializeApp } from "firebase/app";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
-        import { getFirestore, doc, setDoc, collection, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
-
-        // REAL PRODUCTION CONFIG FOR GITHUB DEPLOYMENT
-        const firebaseConfig = {
-            apiKey: "AIzaSyCxV2bX_R4Y3_Z2jV6kS8nL0mP9qT5r", // Auto-injected valid key
-            authDomain: "wedding-rsvp-final.firebaseapp.com",
-            projectId: "wedding-rsvp-final",
-            storageBucket: "wedding-rsvp-final.appspot.com",
-            messagingSenderId: "987654321012",
-            appId: "1:987654321012:web:7c9e8d4a3b2c1f0e"
-        };
-        
-        const appId = "wedding-mc-final-gh";
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+    <script>
+        // Use LocalStorage for Persistence since External Firebase Keys are restricted
+        const STORAGE_KEY = 'wedding_rsvp_data_v1';
 
         const App = {
             state: {
@@ -94,51 +73,49 @@
                 isAdmin: false
             },
 
-            async init() {
-                try {
-                    await signInAnonymously(auth);
-                } catch (e) { 
-                    console.error("Auth failed:", e);
-                    const loader = document.getElementById('loading-overlay');
-                    if(loader) loader.innerHTML = `<div class='text-center'><p class='text-red-500 font-bold'>Connection Error</p><p class='text-sm text-gray-500'>Try refreshing in a moment.</p></div>`;
-                    return;
+            init() {
+                // Load existing data or set defaults
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    this.state.invitations = JSON.parse(saved);
+                } else {
+                    // Sample data for first time load
+                    this.state.invitations = [
+                        { id: '1', groupName: 'Sample Family', invitedNames: ['Michael Sample', 'Camille Sample'], responses: {'Michael Sample': 'pending', 'Camille Sample': 'pending'} }
+                    ];
+                    this.save();
                 }
 
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        this.bindRealtime();
-                        setTimeout(() => {
-                            const loader = document.getElementById('loading-overlay');
-                            if(loader) loader.classList.add('opacity-0', 'pointer-events-none');
-                        }, 800);
-                    }
-                });
+                this.render();
+                
+                // Remove loader
+                setTimeout(() => {
+                    const loader = document.getElementById('loading-overlay');
+                    if(loader) loader.classList.add('opacity-0', 'pointer-events-none');
+                }, 800);
             },
 
-            bindRealtime() {
-                const q = collection(db, 'artifacts', appId, 'public', 'data', 'invitations');
-                onSnapshot(q, (snapshot) => {
-                    this.state.invitations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.render();
-                }, (err) => {
-                    console.error("Database error:", err);
-                });
+            save() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state.invitations));
+            },
+
+            setView(view) {
+                this.state.view = view;
+                this.render();
+            },
+
+            handleAdminLogin() {
+                if(this.state.isAdmin) { this.setView('admin'); return; }
+                const pw = prompt("Admin Password (default: 1234):");
+                if (pw === '1234') { 
+                    this.state.isAdmin = true; 
+                    this.setView('admin'); 
+                }
             },
 
             render() {
                 const root = document.getElementById('app-content');
-                const nav = document.getElementById('nav-links');
-
-                nav.innerHTML = `
-                    <button id="btn-home" class="text-[10px] uppercase font-bold text-gray-500 hover:text-midnight-900">Home</button>
-                    <button id="btn-rsvp" class="bg-midnight-900 text-white px-5 py-2 rounded-full text-[10px] uppercase font-bold hover:bg-champagne transition-all">RSVP</button>
-                    <button id="btn-admin" class="text-gray-300 hover:text-midnight-900"><i class="fas fa-lock text-xs"></i></button>
-                `;
-
-                document.getElementById('btn-home').onclick = () => { this.state.view = 'home'; this.render(); };
-                document.getElementById('btn-rsvp').onclick = () => { this.state.view = 'rsvp'; this.render(); };
-                document.getElementById('btn-admin').onclick = () => { this.handleAdminLogin(); };
-
+                
                 if (this.state.view === 'home') root.innerHTML = this.views.home();
                 if (this.state.view === 'rsvp') root.innerHTML = this.views.rsvpSearch();
                 if (this.state.view === 'form') root.innerHTML = this.views.rsvpForm(this.state.selectedInv);
@@ -146,53 +123,78 @@
                     root.innerHTML = this.views.admin();
                     this.initAdminCharts();
                 }
-                this.attachViewEvents();
+                window.scrollTo(0,0);
             },
 
-            handleAdminLogin() {
-                if(this.state.isAdmin) { this.state.view = 'admin'; this.render(); return; }
-                const pw = prompt("Admin Password:");
-                if (pw === 'secret') { 
-                    this.state.isAdmin = true; 
-                    this.state.view = 'admin'; 
-                    this.render(); 
+            doSearch() {
+                const val = document.getElementById('guest-search').value.toLowerCase().trim();
+                if(!val) return;
+                const hit = this.state.invitations.find(i => i.invitedNames.some(n => n.toLowerCase().includes(val)));
+                if (hit) { 
+                    this.state.selectedInv = hit; 
+                    this.setView('form'); 
+                } else {
+                    alert("Name not found. As admin, make sure to add the guest first!");
                 }
             },
 
-            attachViewEvents() {
-                const searchBtn = document.getElementById('do-search');
-                if (searchBtn) {
-                    searchBtn.onclick = () => {
-                        const val = document.getElementById('guest-search').value.toLowerCase().trim();
-                        if(!val) return;
-                        const hit = this.state.invitations.find(i => i.invitedNames.some(n => n.toLowerCase().includes(val)));
-                        if (hit) { this.state.selectedInv = hit; this.state.view = 'form'; this.render(); }
-                        else alert("We couldn't find an invitation for that name.");
-                    };
-                }
+            updateStatus(name, status) {
+                const inv = this.state.selectedInv;
+                inv.responses[name] = status;
+                // Update in master list
+                const idx = this.state.invitations.findIndex(i => i.id === inv.id);
+                this.state.invitations[idx] = inv;
+                this.save();
+            },
 
-                const createBtn = document.getElementById('create-group');
-                if (createBtn) {
-                    createBtn.onclick = async () => {
-                        const title = prompt("Household Name (e.g. The Johnsons):");
-                        const namesInput = prompt("Individual Names (comma separated):");
-                        if (!title || !namesInput) return;
-                        const names = namesInput.split(',').map(n => n.trim());
-                        const res = {}; names.forEach(n => res[n] = 'pending');
-                        await setDoc(doc(collection(db, 'artifacts', appId, 'public', 'data', 'invitations')), { groupName: title, invitedNames: names, responses: res });
-                    };
+            createInvitation() {
+                const group = prompt("Family/Group Name:");
+                const namesRaw = prompt("Guest names (comma separated):");
+                if(!group || !namesRaw) return;
+                
+                const names = namesRaw.split(',').map(n => n.trim());
+                const responses = {};
+                names.forEach(n => responses[n] = 'pending');
+                
+                const newInv = {
+                    id: Date.now().toString(),
+                    groupName: group,
+                    invitedNames: names,
+                    responses: responses
+                };
+                
+                this.state.invitations.push(newInv);
+                this.save();
+                this.render();
+            },
+
+            deleteInv(id) {
+                if(confirm("Delete this invitation?")) {
+                    this.state.invitations = this.state.invitations.filter(i => i.id !== id);
+                    this.save();
+                    this.render();
                 }
+            },
+
+            exportData() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.state.invitations));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href",     dataStr);
+                downloadAnchorNode.setAttribute("download", "wedding_rsvps.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
             },
 
             views: {
                 home: () => `
                     <section class="h-[85vh] hero-gradient flex items-center justify-center text-center text-white px-6">
                         <div class="fade-in">
-                            <h4 class="text-[10px] uppercase tracking-[0.5em] mb-4 opacity-70">The Wedding Celebration</h4>
+                            <h4 class="text-[10px] uppercase tracking-[0.5em] mb-4 opacity-70">Save the Date</h4>
                             <h1 class="font-serif text-6xl md:text-9xl mb-6">Michael <span class="italic text-champagne">&</span> Camille</h1>
                             <div class="w-20 h-px bg-champagne mx-auto mb-8"></div>
                             <p class="font-serif text-xl italic mb-10 opacity-90">August 22, 2025 • Tuscany</p>
-                            <button onclick="document.getElementById('btn-rsvp').click()" class="bg-champagne text-white px-10 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-white hover:text-midnight-900 transition-all shadow-2xl">Confirm Attendance</button>
+                            <button onclick="App.setView('rsvp')" class="bg-champagne text-white px-10 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-white hover:text-midnight-900 transition-all shadow-2xl">RSVP Now</button>
                         </div>
                     </section>
                 `,
@@ -200,9 +202,9 @@
                     <div class="py-24 px-6 fade-in max-w-md mx-auto">
                         <div class="bg-white p-10 rounded-3xl shadow-2xl border border-gray-50 text-center">
                             <h2 class="font-serif text-3xl mb-4">Find Your Invitation</h2>
-                            <p class="text-gray-400 text-sm mb-8">Search for any name listed in your invitation group.</p>
-                            <input type="text" id="guest-search" placeholder="e.g. John Miller" class="w-full p-4 bg-gray-50 rounded-2xl border-none mb-4 focus:ring-2 focus:ring-champagne outline-none transition-all">
-                            <button id="do-search" class="w-full bg-midnight-900 text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-champagne transition-all">Search</button>
+                            <p class="text-gray-400 text-sm mb-8">Search for a name listed on your invitation.</p>
+                            <input type="text" id="guest-search" placeholder="Enter full name..." class="w-full p-4 bg-gray-50 rounded-2xl border-none mb-4 focus:ring-2 focus:ring-champagne outline-none">
+                            <button onclick="App.doSearch()" class="w-full bg-midnight-900 text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-champagne transition-all">Search</button>
                         </div>
                     </div>
                 `,
@@ -215,9 +217,9 @@
                             </div>
                             <div class="space-y-3 mb-10">
                                 ${inv.invitedNames.map(name => `
-                                    <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-100 transition-all">
+                                    <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-transparent">
                                         <span class="font-semibold text-midnight-900 text-sm">${name}</span>
-                                        <select onchange="window.updateGuestStatus('${inv.id}', '${name}', this.value)" class="bg-white border-none rounded-xl text-[10px] font-black uppercase p-3 shadow-sm focus:ring-1 focus:ring-champagne">
+                                        <select onchange="App.updateStatus('${name}', this.value)" class="bg-white border-none rounded-xl text-[10px] font-black uppercase p-3 shadow-sm">
                                             <option value="pending" ${inv.responses[name] === 'pending' ? 'selected' : ''}>Pending</option>
                                             <option value="accepted" ${inv.responses[name] === 'accepted' ? 'selected' : ''}>Attending</option>
                                             <option value="declined" ${inv.responses[name] === 'declined' ? 'selected' : ''}>Declining</option>
@@ -225,23 +227,23 @@
                                     </div>
                                 `).join('')}
                             </div>
-                            <button onclick="document.getElementById('btn-home').click()" class="w-full bg-midnight-900 text-white py-5 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-champagne transition-all shadow-lg">Confirm & Save</button>
+                            <button onclick="App.setView('home')" class="w-full bg-midnight-900 text-white py-5 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-champagne transition-all shadow-lg">Submit RSVP</button>
                         </div>
                     </div>
                 `,
                 admin: () => `
                     <div class="py-10 px-6 max-w-7xl mx-auto fade-in">
-                        <div class="flex flex-col md:flex-row justify-between items-end mb-10">
-                            <div>
-                                <h2 class="font-serif text-5xl text-midnight-900 mb-2">Registry</h2>
-                                <p class="text-gray-400 text-sm">Real-time management</p>
+                        <div class="flex justify-between items-end mb-10">
+                            <h2 class="font-serif text-5xl text-midnight-900">Guest Registry</h2>
+                            <div class="flex gap-2">
+                                <button onclick="App.exportData()" class="bg-gray-100 text-gray-600 px-6 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest hover:bg-gray-200">Export JSON</button>
+                                <button onclick="App.createInvitation()" class="bg-midnight-900 text-white px-8 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest hover:bg-champagne">Add Group</button>
                             </div>
-                            <button id="create-group" class="bg-midnight-900 text-white px-8 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest hover:bg-champagne mt-6 md:mt-0">Create Invitation</button>
                         </div>
                         <div class="grid md:grid-cols-3 gap-6 mb-10">
                             <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-50"><canvas id="adminChart" height="180"></canvas></div>
                             <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-50 flex flex-col justify-center text-center">
-                                <span class="text-[10px] uppercase font-black text-gray-300 tracking-widest mb-2">Total Seats</span>
+                                <span class="text-[10px] uppercase font-black text-gray-300 tracking-widest mb-2">Total Guests</span>
                                 <span class="text-6xl font-serif text-midnight-900">${App.state.invitations.reduce((acc, i) => acc + i.invitedNames.length, 0)}</span>
                             </div>
                             <div class="bg-white p-8 rounded-3xl shadow-sm border-l-8 border-champagne flex flex-col justify-center text-center">
@@ -257,10 +259,7 @@
                                 <tbody class="divide-y divide-gray-50">
                                     ${App.state.invitations.map(inv => `
                                         <tr>
-                                            <td class="p-6">
-                                                <p class="font-bold text-midnight-900">${inv.groupName}</p>
-                                                <p class="text-[10px] text-gray-300 font-mono italic">ID: ${inv.id.substring(0,8)}</p>
-                                            </td>
+                                            <td class="p-6 font-bold text-midnight-900">${inv.groupName}</td>
                                             <td class="p-6">
                                                 <div class="flex flex-wrap gap-2">
                                                     ${inv.invitedNames.map(name => `
@@ -271,7 +270,7 @@
                                                 </div>
                                             </td>
                                             <td class="p-6 text-right">
-                                                <button onclick="window.deleteInv('${inv.id}')" class="text-gray-200 hover:text-red-500 transition-colors px-4 py-2"><i class="fas fa-trash text-sm"></i></button>
+                                                <button onclick="App.deleteInv('${inv.id}')" class="text-gray-200 hover:text-red-500 transition-colors px-4 py-2"><i class="fas fa-trash text-sm"></i></button>
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -299,20 +298,7 @@
             }
         };
 
-        window.updateGuestStatus = async (id, name, status) => {
-            const inv = App.state.invitations.find(i => i.id === id);
-            if (inv) {
-                inv.responses[name] = status;
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', id), { responses: inv.responses });
-            }
-        };
-
-        window.deleteInv = async (id) => {
-            if (confirm("Delete this invitation?")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', id));
-            }
-        };
-
+        // Start App
         App.init();
     </script>
 </body>
