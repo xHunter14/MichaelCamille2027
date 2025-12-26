@@ -243,6 +243,27 @@
                 if (confirm("Delete this group?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', id));
             },
 
+            startSlider() {
+                clearInterval(this.sliderInterval);
+                this.sliderInterval = setInterval(() => this.moveSlide(1), 5000);
+            },
+
+            moveSlide(dir) {
+                const slides = document.querySelectorAll('.slide');
+                const dots = document.querySelectorAll('.slider-dot');
+                if(!slides.length) return;
+                
+                slides[this.state.currentSlide].classList.remove('active');
+                dots[this.state.currentSlide].classList.remove('bg-emerald', 'w-6');
+                dots[this.state.currentSlide].classList.add('bg-white/20', 'w-2');
+
+                this.state.currentSlide = (this.state.currentSlide + dir + slides.length) % slides.length;
+
+                slides[this.state.currentSlide].classList.add('active');
+                dots[this.state.currentSlide].classList.remove('bg-white/20', 'w-2');
+                dots[this.state.currentSlide].classList.add('bg-emerald', 'w-6');
+            },
+
             render() {
                 const root = document.getElementById('app-content');
                 if (!root) return;
@@ -459,6 +480,7 @@
     </script>
 </body>
 </html>
+
 
 
 
