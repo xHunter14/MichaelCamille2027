@@ -10,18 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <script type="importmap">
-        {
-          "imports": {
-            "firebase/app": "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js",
-            "firebase/auth": "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js",
-            "firebase/firestore": "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js"
-          }
-        }
-    </script>
-
     <script>
-        tailwind.config = {
+        window.tailwind.config = {
             theme: {
                 extend: {
                     colors: {
@@ -34,7 +24,7 @@
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #022c22; scroll-behavior: smooth; color: white; }
+        body { font-family: 'Inter', sans-serif; background-color: #022c22; scroll-behavior: smooth; color: white; overflow-x: hidden; }
         .hero-gradient {
             background: linear-gradient(rgba(2, 44, 34, 0.8), rgba(10, 25, 47, 0.8)), url('https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=2069');
             background-size: cover; background-position: center;
@@ -47,7 +37,7 @@
         .details-card:hover { border-color: #10b981; background: rgba(255, 255, 255, 0.05); }
         
         /* Slider Styles */
-        .slider-container { position: relative; width: 100%; height: 600px; overflow: hidden; border-radius: 2rem; }
+        .slider-container { position: relative; width: 100%; height: 400px; md:height: 600px; overflow: hidden; border-radius: 2rem; }
         .slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease-in-out; }
         .slide.active { opacity: 1; z-index: 10; }
         .slide img { width: 100%; height: 100%; object-fit: cover; }
@@ -61,7 +51,7 @@
 
     <div id="loading-overlay" class="fixed inset-0 bg-[#022c22] z-[100] flex items-center justify-center transition-opacity duration-500">
         <div class="flex flex-col items-center">
-            <div class="loader w-10 h-10 border-4 border-emerald-dark rounded-full mb-4"></div>
+            <div class="loader w-10 h-10 border-4 border-emerald-dark rounded-full mb-4 border-t-emerald-light"></div>
             <p class="text-[10px] uppercase tracking-widest text-emerald-light font-bold">Initializing Wedding Portal</p>
         </div>
     </div>
@@ -73,8 +63,8 @@
                 <span class="font-serif text-2xl font-bold text-white">M&C</span>
             </div>
             <div id="nav-links" class="flex items-center space-x-6">
-                <button onclick="App.setView('home')" class="text-[10px] uppercase font-bold text-gray-400 hover:text-white transition-colors">Home</button>
-                <button onclick="App.setView('details')" class="text-[10px] uppercase font-bold text-gray-400 hover:text-white transition-colors">Details</button>
+                <button onclick="App.setView('home')" class="hidden md:block text-[10px] uppercase font-bold text-gray-400 hover:text-white transition-colors">Home</button>
+                <button onclick="App.setView('details')" class="hidden md:block text-[10px] uppercase font-bold text-gray-400 hover:text-white transition-colors">Details</button>
                 <button onclick="App.setView('rsvp')" class="bg-emerald text-white px-6 py-2 rounded-full text-[10px] uppercase font-bold hover:bg-emerald-hover transition-all">RSVP</button>
                 <button onclick="App.handleAdminLogin()" class="text-white/20 hover:text-white transition-colors"><i class="fas fa-cog text-xs"></i></button>
             </div>
@@ -101,17 +91,16 @@
                     <label class="text-[10px] uppercase font-bold text-emerald tracking-widest block mb-2">Allowed Plus Ones</label>
                     <input type="number" id="modal-plus-ones" value="0" min="0" class="w-full p-4 rounded-xl">
                 </div>
-                <button id="modal-submit" class="w-full bg-emerald text-white py-4 rounded-xl font-bold uppercase tracking-widest text-[10px] mt-4 hover:bg-emerald-hover">Save Invitation</button>
+                <button id="modal-submit" onclick="App.saveFromModal()" class="w-full bg-emerald text-white py-4 rounded-xl font-bold uppercase tracking-widest text-[10px] mt-4 hover:bg-emerald-hover">Save Invitation</button>
             </div>
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "firebase/app";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
-        import { getFirestore, doc, setDoc, collection, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-        // --- PASTE YOUR CONFIG HERE ---
         const firebaseConfig = {
             apiKey: "AIzaSyAU9gBvin5KXh8jd8gNNITpkoz3_6r0MO8",
             authDomain: "michael-camille-wedding.firebaseapp.com",
@@ -125,9 +114,9 @@
         const appId = "wedding-mc-2025-live-v2";
         const ADMIN_PASS = 'HeG4Q|pe4kScPK0U0@f!&s;(}£43>$ci*GXE:X>:mnfw"LjKK=';
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
 
         const App = {
             state: {
@@ -135,19 +124,23 @@
                 invitations: [],
                 selectedInv: null,
                 isAdmin: false,
-                editingId: null
+                editingId: null,
+                currentSlide: 0
             },
+            sliderInterval: null,
 
             async init() {
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         this.bindRealtime();
                         setTimeout(() => {
-                            document.getElementById('loading-overlay').classList.add('opacity-0', 'pointer-events-none');
+                            const overlay = document.getElementById('loading-overlay');
+                            if(overlay) overlay.classList.add('opacity-0', 'pointer-events-none');
                         }, 800);
                     } else {
-                        signInAnonymously(auth).catch(() => {
-                             document.getElementById('loading-overlay').innerHTML = `<div class='text-center p-8'><p class='text-emerald font-bold mb-2'>Project Ready</p><p class='text-[10px] text-gray-400 uppercase tracking-widest'>Paste Firebase Config to Activate</p></div>`;
+                        signInAnonymously(auth).catch((err) => {
+                            console.error("Auth error", err);
+                             document.getElementById('loading-overlay').innerHTML = `<div class='text-center p-8'><p class='text-emerald font-bold mb-2'>Connection Error</p><p class='text-[10px] text-gray-400 uppercase tracking-widest'>Check Firebase Config</p></div>`;
                         });
                     }
                 });
@@ -159,7 +152,7 @@
                 onSnapshot(q, (snapshot) => {
                     this.state.invitations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     this.render();
-                });
+                }, (err) => console.error("Firestore error", err));
             },
 
             setView(view) {
@@ -208,28 +201,33 @@
 
                 if (!groupName || guestList.length === 0) return;
 
-                if (this.state.editingId) {
-                    const inv = this.state.invitations.find(i => i.id === this.state.editingId);
-                    // Preserve existing responses if names still match
-                    const newResponses = {};
-                    guestList.forEach(n => newResponses[n] = inv.responses[n] || 'pending');
-                    
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', this.state.editingId), {
-                        groupName, invitedNames: guestList, plusOnesAllowed: plusOnes, responses: newResponses
-                    });
-                } else {
-                    const res = {}; guestList.forEach(n => res[n] = 'pending');
-                    await setDoc(doc(collection(db, 'artifacts', appId, 'public', 'data', 'invitations')), {
-                        groupName, invitedNames: guestList, plusOnesAllowed: plusOnes, responses: res, plusOneNames: []
-                    });
+                try {
+                    if (this.state.editingId) {
+                        const inv = this.state.invitations.find(i => i.id === this.state.editingId);
+                        const newResponses = {};
+                        guestList.forEach(n => newResponses[n] = (inv.responses && inv.responses[n]) ? inv.responses[n] : 'pending');
+                        
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', this.state.editingId), {
+                            groupName, invitedNames: guestList, plusOnesAllowed: plusOnes, responses: newResponses
+                        });
+                    } else {
+                        const res = {}; guestList.forEach(n => res[n] = 'pending');
+                        const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'invitations'));
+                        await setDoc(newDocRef, {
+                            groupName, invitedNames: guestList, plusOnesAllowed: plusOnes, responses: res, plusOneNames: []
+                        });
+                    }
+                    this.closeModal();
+                } catch (e) {
+                    console.error("Save error", e);
                 }
-                this.closeModal();
             },
 
             async updateStatus(invId, guestName, status) {
                 const inv = this.state.invitations.find(i => i.id === invId);
-                inv.responses[guestName] = status;
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invId), { responses: inv.responses });
+                const updatedResponses = { ...inv.responses };
+                updatedResponses[guestName] = status;
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invId), { responses: updatedResponses });
             },
 
             async updatePlusOneName(invId, index, name) {
@@ -254,14 +252,18 @@
                 if(!slides.length) return;
                 
                 slides[this.state.currentSlide].classList.remove('active');
-                dots[this.state.currentSlide].classList.remove('bg-emerald', 'w-6');
-                dots[this.state.currentSlide].classList.add('bg-white/20', 'w-2');
+                if(dots[this.state.currentSlide]) {
+                    dots[this.state.currentSlide].classList.remove('bg-emerald', 'w-6');
+                    dots[this.state.currentSlide].classList.add('bg-white/20', 'w-2');
+                }
 
                 this.state.currentSlide = (this.state.currentSlide + dir + slides.length) % slides.length;
 
                 slides[this.state.currentSlide].classList.add('active');
-                dots[this.state.currentSlide].classList.remove('bg-white/20', 'w-2');
-                dots[this.state.currentSlide].classList.add('bg-emerald', 'w-6');
+                if(dots[this.state.currentSlide]) {
+                    dots[this.state.currentSlide].classList.remove('bg-white/20', 'w-2');
+                    dots[this.state.currentSlide].classList.add('bg-emerald', 'w-6');
+                }
             },
 
             render() {
@@ -269,15 +271,16 @@
                 if (!root) return;
 
                 if (this.state.view === 'home') root.innerHTML = this.views.home();
-                if (this.state.view === 'details') root.innerHTML = this.views.details();
-                if (this.state.view === 'rsvp') root.innerHTML = this.views.rsvpSearch();
-                if (this.state.view === 'form') root.innerHTML = this.views.rsvpForm(this.state.selectedInv);
-                if (this.state.view === 'admin') {
+                else if (this.state.view === 'details') root.innerHTML = this.views.details();
+                else if (this.state.view === 'rsvp') root.innerHTML = this.views.rsvpSearch();
+                else if (this.state.view === 'form') root.innerHTML = this.views.rsvpForm(this.state.selectedInv);
+                else if (this.state.view === 'admin') {
                     root.innerHTML = this.views.admin();
                     this.initAdminCharts();
                 }
                 
                 if(this.state.view === 'home') this.startSlider();
+                else clearInterval(this.sliderInterval);
             },
 
             views: {
@@ -285,17 +288,17 @@
                     <section class="h-[85vh] hero-gradient flex items-center justify-center text-center px-6">
                         <div class="fade-in max-w-4xl">
                             <h4 class="text-[10px] uppercase tracking-[0.6em] mb-4 text-emerald-light font-bold">The Wedding of</h4>
-                            <h1 class="font-serif text-7xl md:text-9xl mb-6 text-white">Michael <span class="italic text-navy/40">&</span> Camille</h1>
-                            <p class="font-serif text-2xl italic mb-10 text-gray-300">January 28, 2027 • Legazpi City, Albay</p>
+                            <h1 class="font-serif text-5xl md:text-9xl mb-6 text-white">Michael <span class="italic text-white/40">&</span> Camille</h1>
+                            <p class="font-serif text-xl md:text-2xl italic mb-10 text-gray-300">January 28, 2027 • Legazpi City, Albay</p>
                             <div class="flex flex-col md:flex-row gap-4 justify-center">
-                                <button onclick="window.App.setView('details')" class="bg-white/5 backdrop-blur-md border border-white/20 text-white px-10 py-4 rounded-full text-[10px] uppercase font-bold hover:bg-white hover:text-emerald-dark transition-all">Details</button>
-                                <button onclick="window.App.setView('rsvp')" class="bg-emerald text-white px-10 py-4 rounded-full text-[10px] uppercase font-bold hover:bg-emerald-hover transition-all">RSVP Online</button>
+                                <button onclick="App.setView('details')" class="bg-white/5 backdrop-blur-md border border-white/20 text-white px-10 py-4 rounded-full text-[10px] uppercase font-bold hover:bg-white hover:text-emerald-dark transition-all">Details</button>
+                                <button onclick="App.setView('rsvp')" class="bg-emerald text-white px-10 py-4 rounded-full text-[10px] uppercase font-bold hover:bg-emerald-hover transition-all">RSVP Online</button>
                             </div>
                         </div>
                     </section>
                     <section class="py-24 px-6 max-w-6xl mx-auto">
                         <div class="text-center mb-16">
-                            <h2 class="font-serif text-5xl mb-4">Our Gallery</h2>
+                            <h2 class="font-serif text-5xl mb-4 text-white">Our Gallery</h2>
                             <div class="w-12 h-1 bg-emerald mx-auto"></div>
                         </div>
 
@@ -335,22 +338,23 @@
                                 <h3 class="font-serif text-2xl mb-4 text-emerald-light">Schedule</h3>
                                 <ul class="space-y-4 text-sm text-gray-400">
                                     <li class="flex justify-between border-b border-white/5 pb-2"><span>Ceremony</span> <span>4:00 PM</span></li>
+                                    <li class="flex justify-between border-b border-white/5 pb-2"><span>Cocktails</span> <span>6:00 PM</span></li>
                                     <li class="flex justify-between border-b border-white/5 pb-2"><span>Dinner</span> <span>7:00 PM</span></li>
                                 </ul>
                             </div>
                             <div class="details-card p-10 rounded-[2rem]">
                                 <h3 class="font-serif text-2xl mb-4 text-emerald-light">Dress Code</h3>
-                                <p class="text-sm text-gray-400">Black Tie Optional. Theme: <span class="text-white font-bold">Navy Blue & Emerald Green</span>.</p>
+                                <p class="text-sm text-gray-400">Formal Attire. Preferred colors: <span class="text-white font-bold">Navy Blue, Emerald Green, & Earth Tones</span>.</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-2 gap-8">
                             <div class="details-card p-10 rounded-[2rem]">
                                 <h3 class="font-serif text-2xl mb-4 text-emerald-light">Ceremony</h3>
-                                <p class="text-sm text-gray-400">Villa La Foce Gardens<br>Chianciano Terme, Italy</p>
+                                <p class="text-sm text-gray-400">San Rafael Church<br>Legazpi City, Albay</p>
                             </div>
                             <div class="details-card p-10 rounded-[2rem]">
                                 <h3 class="font-serif text-2xl mb-4 text-emerald-light">Reception</h3>
-                                <p class="text-sm text-gray-400">Limonaia Court<br>Celebration follows ceremony.</p>
+                                <p class="text-sm text-gray-400">The Grand Ballroom<br>Oriental Hotel Legazpi</p>
                             </div>
                         </div>
                     </div>
@@ -358,21 +362,23 @@
                 rsvpSearch: () => `
                     <div class="py-24 px-6 fade-in max-w-md mx-auto">
                         <div class="details-card p-12 rounded-[3rem] text-center">
-                            <h2 class="font-serif text-3xl mb-8">Find Your Invite</h2>
+                            <h2 class="font-serif text-3xl mb-8 text-white">Find Your Invite</h2>
                             <input type="text" id="guest-search" placeholder="Enter Full Name" class="w-full p-4 rounded-2xl mb-6">
                             <button id="search-btn" class="w-full bg-emerald text-white py-5 rounded-2xl font-bold uppercase tracking-widest text-[10px]">Search Guest List</button>
                         </div>
                     </div>
                 `,
-                rsvpForm: (inv) => `
+                rsvpForm: (inv) => {
+                    if(!inv) return `<div class='p-20 text-center'><p>Error: No invitation selected.</p><button onclick="App.setView('rsvp')">Go Back</button></div>`;
+                    return `
                     <div class="py-16 px-6 fade-in max-w-2xl mx-auto">
-                        <div class="details-card p-12 rounded-[3rem]">
+                        <div class="details-card p-8 md:p-12 rounded-[3rem]">
                             <h2 class="font-serif text-4xl text-center mb-10 text-white">${inv.groupName}</h2>
                             <div class="space-y-6 mb-12">
                                 ${inv.invitedNames.map(name => `
-                                    <div class="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5 gap-4">
                                         <span class="font-bold text-gray-200">${name}</span>
-                                        <select onchange="window.App.updateStatus('${inv.id}', '${name}', this.value)" class="p-3 rounded-xl text-[10px] font-black uppercase">
+                                        <select onchange="App.updateStatus('${inv.id}', '${name}', this.value)" class="p-3 rounded-xl text-[10px] font-black uppercase">
                                             <option value="pending" ${inv.responses[name] === 'pending' ? 'selected' : ''}>Pending</option>
                                             <option value="accepted" ${inv.responses[name] === 'accepted' ? 'selected' : ''}>Attending</option>
                                             <option value="declined" ${inv.responses[name] === 'declined' ? 'selected' : ''}>Declining</option>
@@ -386,7 +392,7 @@
                                         <div class="space-y-4">
                                             ${Array.from({length: inv.plusOnesAllowed}).map((_, i) => `
                                                 <input type="text" placeholder="Plus One #${i+1} Full Name" 
-                                                       onchange="window.App.updatePlusOneName('${inv.id}', ${i}, this.value)"
+                                                       onchange="App.updatePlusOneName('${inv.id}', ${i}, this.value)"
                                                        value="${(inv.plusOneNames || [])[i] || ''}"
                                                        class="w-full p-4 rounded-xl">
                                             `).join('')}
@@ -394,31 +400,31 @@
                                     </div>
                                 ` : ''}
                             </div>
-                            <button onclick="window.App.setView('home')" class="w-full bg-emerald text-white py-6 rounded-2xl font-bold uppercase tracking-widest text-[10px]">Complete Response</button>
+                            <button onclick="App.setView('home')" class="w-full bg-emerald text-white py-6 rounded-2xl font-bold uppercase tracking-widest text-[10px]">Back to Home</button>
                         </div>
                     </div>
-                `,
+                `},
                 admin: () => `
                     <div class="py-10 px-6 max-w-7xl mx-auto fade-in">
                         <div class="flex justify-between items-center mb-12">
-                            <h2 class="font-serif text-5xl">Management</h2>
-                            <button onclick="window.App.openModal()" class="bg-emerald text-white px-8 py-4 rounded-xl text-[10px] uppercase font-black">Add New Guest</button>
+                            <h2 class="font-serif text-5xl text-white">Management</h2>
+                            <button onclick="App.openModal()" class="bg-emerald text-white px-8 py-4 rounded-xl text-[10px] uppercase font-black">Add New Guest</button>
                         </div>
                         <div class="grid md:grid-cols-3 gap-8 mb-12">
-                            <div class="details-card p-10 rounded-[2rem] flex items-center justify-center"><canvas id="adminChart" height="200"></canvas></div>
+                            <div class="details-card p-10 rounded-[2rem] flex items-center justify-center min-h-[200px]"><canvas id="adminChart"></canvas></div>
                             <div class="details-card p-10 rounded-[2rem] text-center">
-                                <span class="text-[10px] text-gray-500 uppercase font-black tracking-widest block mb-2">Total</span>
-                                <span class="text-7xl font-serif">${App.state.invitations.reduce((acc, i) => acc + i.invitedNames.length + (i.plusOneNames?.filter(n => n).length || 0), 0)}</span>
+                                <span class="text-[10px] text-gray-500 uppercase font-black tracking-widest block mb-2">Total Invited</span>
+                                <span class="text-7xl font-serif text-white">${App.state.invitations.reduce((acc, i) => acc + i.invitedNames.length + (i.plusOnesAllowed || 0), 0)}</span>
                             </div>
                             <div class="bg-emerald p-10 rounded-[2rem] text-center">
                                 <span class="text-[10px] text-white/50 uppercase font-black tracking-widest block mb-2">Confirmed</span>
-                                <span class="text-7xl font-serif text-white">${App.state.invitations.reduce((acc, i) => acc + Object.values(i.responses).filter(v => v === 'accepted').length + (i.plusOneNames?.filter(n => n).length || 0), 0)}</span>
+                                <span class="text-7xl font-serif text-white">${App.state.invitations.reduce((acc, i) => acc + Object.values(i.responses || {}).filter(v => v === 'accepted').length + (i.plusOneNames?.filter(n => n).length || 0), 0)}</span>
                             </div>
                         </div>
-                        <div class="details-card rounded-[2.5rem] overflow-hidden">
+                        <div class="details-card rounded-[2.5rem] overflow-x-auto">
                             <table class="w-full text-left">
                                 <thead class="bg-white/5 text-[10px] uppercase font-bold text-gray-500">
-                                    <tr><th class="p-8">Group</th><th class="p-8">Status / Plus Ones</th><th class="p-8 text-right">Admin</th></tr>
+                                    <tr><th class="p-8">Group</th><th class="p-8">Status / Plus Ones</th><th class="p-8 text-right">Actions</th></tr>
                                 </thead>
                                 <tbody class="divide-y divide-white/5">
                                     ${App.state.invitations.map(inv => `
@@ -434,9 +440,9 @@
                                                     ` : '').join('')}
                                                 </div>
                                             </td>
-                                            <td class="p-8 text-right">
-                                                <button onclick="window.App.openModal('${inv.id}')" class="text-emerald hover:text-white mr-4"><i class="fas fa-edit"></i></button>
-                                                <button onclick="window.App.deleteInv('${inv.id}')" class="text-gray-600 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                                            <td class="p-8 text-right whitespace-nowrap">
+                                                <button onclick="App.openModal('${inv.id}')" class="text-emerald hover:text-white mr-4"><i class="fas fa-edit"></i></button>
+                                                <button onclick="App.deleteInv('${inv.id}')" class="text-gray-600 hover:text-red-500"><i class="fas fa-trash"></i></button>
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -453,28 +459,43 @@
                     if (!ctx) return;
                     let y = 0, n = 0, p = 0;
                     this.state.invitations.forEach(i => {
-                        Object.values(i.responses).forEach(r => { if (r === 'accepted') y++; else if (r === 'declined') n++; else p++; });
-                        y += (i.plusOneNames || []).filter(n => n).length;
+                        Object.values(i.responses || {}).forEach(r => { 
+                            if (r === 'accepted') y++; 
+                            else if (r === 'declined') n++; 
+                            else p++; 
+                        });
+                        y += (i.plusOneNames || []).filter(name => name).length;
                     });
                     new Chart(ctx, {
                         type: 'doughnut',
                         data: { labels: ['Yes', 'No', 'Pending'], datasets: [{ data: [y, n, p], backgroundColor: ['#10b981', '#ef4444', 'rgba(255,255,255,0.1)'], borderWidth: 0 }] },
-                        options: { maintainAspectRatio: false, cutout: '85%', plugins: { legend: { display: false } } }
+                        options: { maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false } } }
                     });
                 }, 100);
             }
         };
 
+        // Export to Global
         window.App = App;
 
-        document.getElementById('modal-submit').onclick = () => App.saveFromModal();
-
+        // Unified Event Listeners
         document.addEventListener('click', (e) => {
             if (e.target.id === 'search-btn') {
-                const val = document.getElementById('guest-search').value.toLowerCase().trim();
+                const searchInput = document.getElementById('guest-search');
+                if(!searchInput) return;
+                const val = searchInput.value.toLowerCase().trim();
                 const hit = App.state.invitations.find(i => i.invitedNames.some(n => n.toLowerCase().includes(val)));
-                if (hit) { App.state.selectedInv = hit; App.setView('form'); }
-                else alert("Invitation not found.");
+                if (hit) { 
+                    App.state.selectedInv = hit; 
+                    App.setView('form'); 
+                }
+                else {
+                    const msg = document.createElement('div');
+                    msg.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-full text-xs font-bold z-[100]";
+                    msg.innerText = "Invitation not found. Please check spelling.";
+                    document.body.appendChild(msg);
+                    setTimeout(() => msg.remove(), 3000);
+                }
             }
         });
 
@@ -482,6 +503,7 @@
     </script>
 </body>
 </html>
+
 
 
 
