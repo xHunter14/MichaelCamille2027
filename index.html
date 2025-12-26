@@ -276,6 +276,8 @@
                     root.innerHTML = this.views.admin();
                     this.initAdminCharts();
                 }
+                
+                if(this.state.view === 'home') this.startSlider();
             },
 
             views: {
@@ -480,6 +482,7 @@
     </script>
 </body>
 </html>
+
 
 
 
