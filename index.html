@@ -37,7 +37,7 @@
         .details-card:hover { border-color: #10b981; background: rgba(255, 255, 255, 0.05); }
         
         /* Slider Styles */
-        .slider-container { position: relative; width: 100%; height: 1000px; md:height: 600px; overflow: hidden; border-radius: 2rem; }
+        .slider-container { position: relative; width: 100%; height: 1000px; md:height: 400px; overflow: hidden; border-radius: 2rem; }
         .slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease-in-out; }
         .slide.active { opacity: 1; z-index: 10; }
         .slide img { width: 100%; height: 100%; object-fit: cover; }
@@ -289,7 +289,7 @@
                         <div class="fade-in max-w-4xl">
                             <h4 class="text-[10px] uppercase tracking-[0.6em] mb-4 text-emerald-light font-bold">The Wedding of</h4>
                             <h1 class="font-serif text-5xl md:text-9xl mb-6 text-white">Michael <span class="italic text-white/40">&</span> Camille</h1>
-                            <p class="font-serif text-xl md:text-2xl italic mb-10 text-gray-300">January 28, 2027 • Legazpi City, Albay</p>
+                            <p class="font-serif text-xl md:text-2xl italic mb-10 text-gray-300">January 18, 2027 • Legazpi City, Albay</p>
                             <div class="flex flex-col md:flex-row gap-4 justify-center">
                                 <button onclick="App.setView('details')" class="bg-white/5 backdrop-blur-md border border-white/20 text-white px-10 py-4 rounded-full text-[10px] uppercase font-bold hover:bg-white hover:text-emerald-dark transition-all">Details</button>
                                 <button onclick="App.setView('rsvp')" class="bg-emerald text-white px-10 py-4 rounded-full text-[10px] uppercase font-bold hover:bg-emerald-hover transition-all">RSVP Online</button>
@@ -302,7 +302,7 @@
                             <div class="w-12 h-1 bg-emerald mx-auto"></div>
                         </div>
 
-                        <div class="slider-container shadow-1x3">
+                        <div class="slider-container shadow-2x1">
                             <div class="slide active"><img src="Photo/114CAMILLETUASON00595.JPG"></div>
                             <div class="slide"><img src="Photo/114CAMILLETUASON00613.JPG"></div>
                             <div class="slide"><img src="Photo/114CAMILLETUASON00614.JPG"></div>
@@ -337,24 +337,24 @@
                             <div class="details-card p-10 rounded-[2rem]">
                                 <h3 class="font-serif text-2xl mb-4 text-emerald-light">Schedule</h3>
                                 <ul class="space-y-4 text-sm text-gray-400">
-                                    <li class="flex justify-between border-b border-white/5 pb-2"><span>Ceremony</span> <span>4:00 PM</span></li>
-                                    <li class="flex justify-between border-b border-white/5 pb-2"><span>Cocktails</span> <span>6:00 PM</span></li>
-                                    <li class="flex justify-between border-b border-white/5 pb-2"><span>Dinner</span> <span>7:00 PM</span></li>
+                                    <li class="flex justify-between border-b border-white/5 pb-2"><span>Ceremony</span> <span>1:00 PM</span></li>
+                                    <li class="flex justify-between border-b border-white/5 pb-2"><span>Reception</span> <span>3:00 PM</span></li>
+                                    <li class="flex justify-between border-b border-white/5 pb-2"><span>Dinner</span> <span>6:00 PM</span></li>
                                 </ul>
                             </div>
                             <div class="details-card p-10 rounded-[2rem]">
                                 <h3 class="font-serif text-2xl mb-4 text-emerald-light">Dress Code</h3>
-                                <p class="text-sm text-gray-400">Formal Attire. Preferred colors: <span class="text-white font-bold">Navy Blue, Emerald Green, & Earth Tones</span>.</p>
+                                <p class="text-sm text-gray-400">Formal Attire. Preferred colors: <span class="text-white font-bold">Navy Blue & Emerald Green</span>.</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-2 gap-8">
                             <div class="details-card p-10 rounded-[2rem]">
                                 <h3 class="font-serif text-2xl mb-4 text-emerald-light">Ceremony</h3>
-                                <p class="text-sm text-gray-400">San Rafael Church<br>Legazpi City, Albay</p>
+                                <p class="text-sm text-gray-400">St. Gregory the Great Cathedral<br>Legazpi City, Albay</p>
                             </div>
                             <div class="details-card p-10 rounded-[2rem]">
                                 <h3 class="font-serif text-2xl mb-4 text-emerald-light">Reception</h3>
-                                <p class="text-sm text-gray-400">The Grand Ballroom<br>Oriental Hotel Legazpi</p>
+                                <p class="text-sm text-gray-400">Lakandula Hall<br>La Roca Veranda Suites & Restaurant, Lakandula Drive, Gogon, Legazpi City</p>
                             </div>
                         </div>
                     </div>
@@ -503,6 +503,7 @@
     </script>
 </body>
 </html>
+
 
 
 
