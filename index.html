@@ -27,10 +27,22 @@
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #020617; scroll-behavior: smooth; color: white; overflow-x: hidden; }
+        
         .hero-gradient {
             background: linear-gradient(rgba(2, 6, 23, 0.85), rgba(15, 23, 42, 0.75)), url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=2000');
             background-size: cover; background-position: center;
         }
+
+        /* Screenshot Protection Styles */
+        .security-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999; opacity: 0.03;
+            background: repeating-linear-gradient(45deg, #fff, #fff 10px, #000 10px, #000 20px);
+            display: none;
+        }
+        body.screenshot-protected .security-overlay { display: block; }
+        @media print { body.screenshot-protected { display: none; } }
+
         .fade-in { animation: fadeIn 0.8s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -44,20 +56,13 @@
         input:focus { border-color: #38bdf8 !important; outline: none; box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
         
         .gatekeeper-bg { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); }
-        #qr-display img { margin: 0 auto; border: 10px solid white; border-radius: 10px; }
-
-        #privacy-shield { display: none; position: fixed; inset: 0; background: black; z-index: 9999; align-items: center; justify-content: center; text-align: center; }
+        #qr-display img, .mini-qr img { margin: 0 auto; border: 4px solid white; border-radius: 4px; }
+        .mini-qr { display: inline-block; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
 
-    <div id="privacy-shield">
-        <div class="p-8">
-            <i class="fas fa-eye-slash text-5xl text-accent mb-6"></i>
-            <h2 class="text-2xl font-serif">Privacy Protected</h2>
-            <p class="text-gray-500 mt-2">Screenshots are disabled for this event.</p>
-        </div>
-    </div>
+    <div class="security-overlay"></div>
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-[#020617] z-[100] flex items-center justify-center transition-opacity duration-500">
@@ -80,64 +85,46 @@
     <!-- Main Content -->
     <main id="app-content" class="flex-grow"></main>
 
-    <!-- Admin Modals -->
+    <!-- Modal for CRUD -->
     <div id="modal-container" class="fixed inset-0 z-[60] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-navy-900 w-full max-w-lg rounded-[2.5rem] p-8 md:p-12 border border-white/10 fade-in relative text-center">
-            <button onclick="App.closeModal()" class="absolute top-8 right-8 text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
-            <h2 id="modal-title" class="font-serif text-3xl mb-8 text-white">Guest Management</h2>
-            <div class="space-y-5 text-left">
-                <div>
-                    <label class="text-[10px] uppercase font-black text-accent tracking-widest block mb-2">Group Name</label>
-                    <input type="text" id="modal-group-name" placeholder="The Smith Family" class="w-full p-4 rounded-xl">
-                </div>
-                <div>
-                    <label class="text-[10px] uppercase font-black text-accent tracking-widest block mb-2">Access Code</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="modal-invite-code" placeholder="XYZ123" class="w-full p-4 rounded-xl font-mono uppercase">
-                        <button onclick="App.generateRandomCode()" class="bg-white/10 px-4 rounded-xl hover:bg-white/20"><i class="fas fa-random"></i></button>
-                    </div>
-                </div>
-                <div>
-                    <label class="text-[10px] uppercase font-black text-accent tracking-widest block mb-2">Names (Comma Separated)</label>
-                    <textarea id="modal-guest-names" placeholder="Alice, Bob" class="w-full p-4 rounded-xl h-24 resize-none"></textarea>
-                </div>
-                <button onclick="App.saveFromModal()" class="w-full bg-royal text-white py-5 rounded-2xl font-bold uppercase tracking-widest text-[10px] mt-4">Save Invitation</button>
-            </div>
+        <div id="modal-content-wrapper" class="bg-navy-900 w-full max-w-lg rounded-[2.5rem] p-8 md:p-12 border border-white/10 fade-in relative">
         </div>
     </div>
 
+    <!-- QR Modal -->
     <div id="qr-modal" class="fixed inset-0 z-[70] hidden bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-navy-950 w-full max-w-sm rounded-[3rem] p-10 border border-white/10 text-center">
             <h3 id="qr-modal-title" class="font-serif text-2xl text-white mb-2">Guest Access QR</h3>
             <p id="qr-modal-group" class="text-[10px] uppercase text-accent tracking-widest mb-8 font-black"></p>
             <div id="qr-display" class="bg-white p-4 rounded-2xl mb-8 flex justify-center items-center"></div>
-            <button onclick="App.closeQRModal()" class="w-full bg-white/5 border border-white/10 text-white py-4 rounded-2xl font-bold text-[10px]">Close</button>
+            <button onclick="App.closeQRModal()" class="w-full bg-white/5 border border-white/10 text-white py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest">Close</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-        // Environment Setup with Error Handling
-        let db, auth, appId;
-        try {
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-            appId = typeof __app_id !== 'undefined' ? __app_id : 'wedding-portal-v1';
-            
-            if (firebaseConfig) {
-                const firebaseApp = initializeApp(firebaseConfig);
-                auth = getAuth(firebaseApp);
-                db = getFirestore(firebaseApp);
-            }
-        } catch (e) {
-            console.error("Firebase Init Error:", e);
-        }
+        // Firebase Config from User
+        const firebaseConfig = {
+            apiKey: "AIzaSyAU9gBvin5KXh8jd8gNNITpkoz3_6r0MO8",
+            authDomain: "michael-camille-wedding.firebaseapp.com",
+            projectId: "michael-camille-wedding",
+            storageBucket: "michael-camille-wedding.firebasestorage.app",
+            messagingSenderId: "1039771745732",
+            appId: "1:1039771745732:web:1b4a9acd3aff927ff53891",
+            measurementId: "G-SW72X65XY0"
+        };
 
         const ADMIN_ACCESS_CODE = "ADMIN99";
 
         const App = {
+            db: null,
+            auth: null,
+            appId: 'michael-camille-wedding',
+            isLocalMode: true,
+
             state: {
                 view: 'gatekeeper',
                 invitations: [],
@@ -146,81 +133,80 @@
                 isUnlocked: false,
                 editingId: null,
                 user: null,
-                settings: { screenshotProtection: false }
+                settings: { screenshotProtection: true }
             },
 
             async init() {
-                this.initPrivacyListeners();
-                if (!auth) {
-                    console.error("Auth not initialized. Config missing?");
-                    this.render();
-                    return;
+                try {
+                    const firebaseApp = initializeApp(firebaseConfig);
+                    this.auth = getAuth(firebaseApp);
+                    this.db = getFirestore(firebaseApp);
+                    this.isLocalMode = false;
+                    this.initCloudAuth();
+                } catch (e) {
+                    console.error("Firebase Initialization Failed:", e);
+                    this.initLocalMode();
                 }
+                this.applySecuritySettings();
+            },
 
-                onAuthStateChanged(auth, async (user) => {
+            initCloudAuth() {
+                onAuthStateChanged(this.auth, async (user) => {
                     if (user) {
                         this.state.user = user;
-                        this.bindSettings();
-                        this.bindRealtime();
+                        this.bindCloudData();
                     } else {
                         try {
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                await signInWithCustomToken(auth, __initial_auth_token);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
-                        } catch(e) { console.error("Auth failed:", e); }
+                            await signInAnonymously(this.auth);
+                        } catch(e) { 
+                            this.initLocalMode();
+                        }
                     }
                 });
             },
 
-            initPrivacyListeners() {
-                window.addEventListener('keydown', (e) => {
-                    if (!this.state.settings.screenshotProtection) return;
-                    const isScreenshot = (e.key === 'PrintScreen') || (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5'));
-                    if (isScreenshot) this.triggerPrivacyShield();
-                });
-                window.addEventListener('blur', () => {
-                    if (this.state.settings.screenshotProtection && this.state.isUnlocked) this.triggerPrivacyShield();
-                });
-                window.addEventListener('focus', () => {
-                    const shield = document.getElementById('privacy-shield');
-                    if (shield) shield.style.display = 'none';
-                });
+            initLocalMode() {
+                this.isLocalMode = true;
+                const stored = localStorage.getItem('wedding_local_invites');
+                this.state.invitations = stored ? JSON.parse(stored) : [];
+                this.checkQRAutoLogin();
+                this.render();
+                this.hideLoader();
             },
 
-            triggerPrivacyShield() {
-                const shield = document.getElementById('privacy-shield');
-                if (shield) shield.style.display = 'flex';
-            },
-
-            bindSettings() {
-                if (!db || !this.state.user) return;
-                // Path: artifacts/{appId}/public/data/settings/general (Even segments: 6)
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general');
-                onSnapshot(docRef, (docSnap) => {
-                    if(docSnap.exists()) {
-                        this.state.settings = docSnap.data();
-                        this.render(); 
-                    } else {
-                        setDoc(docRef, { screenshotProtection: false });
-                    }
-                }, (err) => console.error("Settings sync fail:", err));
-            },
-
-            bindRealtime() {
-                if (!db || !this.state.user) return;
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'invitations');
-                onSnapshot(colRef, (snapshot) => {
-                    this.state.invitations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            bindCloudData() {
+                const colRef = collection(this.db, 'artifacts', this.appId, 'public', 'data', 'invitations');
+                onSnapshot(colRef, (snap) => {
+                    this.state.invitations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     this.checkQRAutoLogin();
                     this.render();
-                    const loader = document.getElementById('loading-overlay');
-                    if(loader) {
-                        loader.classList.add('opacity-0');
-                        setTimeout(() => loader.classList.add('hidden'), 500);
-                    }
-                }, (err) => console.error("Data sync fail:", err));
+                    this.hideLoader();
+                }, (e) => {
+                    console.error("Firestore Error:", e);
+                    this.initLocalMode();
+                });
+            },
+
+            saveLocal() {
+                if (!this.isLocalMode) return;
+                localStorage.setItem('wedding_local_invites', JSON.stringify(this.state.invitations));
+                this.render();
+            },
+
+            applySecuritySettings() {
+                if (this.state.settings.screenshotProtection) {
+                    document.body.classList.add('screenshot-protected');
+                } else {
+                    document.body.classList.remove('screenshot-protected');
+                }
+            },
+
+            hideLoader() {
+                const loader = document.getElementById('loading-overlay');
+                if(loader) {
+                    loader.classList.add('opacity-0');
+                    setTimeout(() => loader.classList.add('hidden'), 500);
+                }
             },
 
             checkQRAutoLogin() {
@@ -232,9 +218,8 @@
             },
 
             unlockWithCode() {
-                const codeInput = document.getElementById('unlock-code');
-                if (!codeInput) return;
-                this.processUnlock(codeInput.value.trim().toUpperCase());
+                const input = document.getElementById('unlock-code');
+                if (input) this.processUnlock(input.value.trim().toUpperCase());
             },
 
             processUnlock(code) {
@@ -260,68 +245,110 @@
             },
 
             setView(view) {
-                if (!this.state.isAdmin && (view === 'home' || view === 'details')) {
-                    if (!this.hasCompletedRSVP(this.state.selectedInv)) {
-                        alert("Please complete your RSVP status to proceed.");
-                        this.state.view = 'rsvp';
-                        this.render();
-                        return;
-                    }
-                }
                 this.state.view = view;
                 this.render();
                 window.scrollTo(0, 0);
             },
 
-            async toggleScreenshotProtection() {
-                if (!db) return;
-                const newVal = !this.state.settings.screenshotProtection;
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general'), { screenshotProtection: newVal });
+            generateCode() {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let code = '';
+                for (let i = 0; i < 6; i++) {
+                    code += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                document.getElementById('modal-invite-code').value = code;
             },
 
-            openModal(id = null) {
+            openGuestModal(id = null) {
                 this.state.editingId = id;
                 const inv = id ? this.state.invitations.find(i => i.id === id) : null;
-                document.getElementById('modal-group-name').value = inv ? inv.groupName : "";
-                document.getElementById('modal-invite-code').value = inv ? (inv.inviteCode || "") : "";
-                document.getElementById('modal-guest-names').value = inv ? inv.invitedNames.join(', ') : "";
-                if(!id || (inv && !inv.inviteCode)) this.generateRandomCode();
+                const wrapper = document.getElementById('modal-content-wrapper');
+                wrapper.innerHTML = `
+                    <button onclick="App.closeModal()" class="absolute top-8 right-8 text-gray-500 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                    <h2 class="font-serif text-3xl mb-8 text-white text-center">${id ? 'Edit Group' : 'Add Invitation'}</h2>
+                    <div class="space-y-5">
+                        <div class="relative">
+                            <input type="text" id="modal-group-name" value="${inv ? inv.groupName : ''}" placeholder="Group Name (e.g. Smith Family)" class="w-full p-4 rounded-xl pl-12">
+                            <i class="fas fa-users absolute left-4 top-5 text-gray-500"></i>
+                        </div>
+                        <div class="relative flex gap-2">
+                            <div class="relative flex-grow">
+                                <input type="text" id="modal-invite-code" value="${inv ? (inv.inviteCode || '') : ''}" placeholder="ACCESS CODE" class="w-full p-4 rounded-xl font-mono uppercase pl-12">
+                                <i class="fas fa-key absolute left-4 top-5 text-gray-500"></i>
+                            </div>
+                            <button onclick="App.generateCode()" class="bg-white/10 hover:bg-white/20 w-14 rounded-xl text-accent transition-colors"><i class="fas fa-magic"></i></button>
+                        </div>
+                        <div class="relative">
+                            <textarea id="modal-guest-names" placeholder="Guest Names (separate with commas)" class="w-full p-4 rounded-xl h-32 resize-none pl-12">${inv ? inv.invitedNames.join(', ') : ''}</textarea>
+                            <i class="fas fa-address-book absolute left-4 top-5 text-gray-500"></i>
+                        </div>
+                        <div class="pt-4 space-y-3">
+                            <button onclick="App.saveGuestFromModal()" class="w-full bg-royal text-white py-5 rounded-2xl font-bold uppercase tracking-widest text-[10px]">
+                                ${id ? 'Update Invitation' : 'Create Invitation'}
+                            </button>
+                            ${id ? `<button onclick="App.deleteGuest('${id}')" class="w-full bg-red-500/10 text-red-400 py-4 rounded-2xl font-bold uppercase tracking-widest text-[9px] hover:bg-red-500/20">Delete Invitation</button>` : ''}
+                        </div>
+                    </div>
+                `;
                 document.getElementById('modal-container').classList.remove('hidden');
             },
 
             closeModal() { document.getElementById('modal-container').classList.add('hidden'); },
 
-            generateRandomCode() {
-                document.getElementById('modal-invite-code').value = Math.random().toString(36).substring(2, 8).toUpperCase();
-            },
-
-            async saveFromModal() {
-                if (!db) return;
-                const groupName = document.getElementById('modal-group-name').value;
-                const inviteCode = document.getElementById('modal-invite-code').value.toUpperCase();
+            async saveGuestFromModal() {
+                const groupName = document.getElementById('modal-group-name').value.trim();
+                const inviteCode = document.getElementById('modal-invite-code').value.toUpperCase().trim();
                 const names = document.getElementById('modal-guest-names').value.split(',').map(n => n.trim()).filter(n => n);
-                if (!groupName || !names.length || !inviteCode) return alert("Missing fields.");
+                
+                if (!groupName || !names.length || !inviteCode) return alert("Please fill all required fields.");
 
-                const inv = this.state.editingId ? this.state.invitations.find(i => i.id === this.state.editingId) : null;
-                const responses = inv ? { ...inv.responses } : {};
+                const existing = this.state.editingId ? this.state.invitations.find(i => i.id === this.state.editingId) : null;
+                const responses = existing ? { ...existing.responses } : {};
                 names.forEach(n => { if(!responses[n]) responses[n] = 'pending'; });
 
-                const data = { groupName, inviteCode, invitedNames: names, responses };
-                if (this.state.editingId) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', this.state.editingId), data);
+                const data = { 
+                    groupName, 
+                    inviteCode, 
+                    invitedNames: names, 
+                    responses,
+                    updatedAt: Date.now()
+                };
+
+                if (this.isLocalMode) {
+                    if (this.state.editingId) {
+                        const idx = this.state.invitations.findIndex(i => i.id === this.state.editingId);
+                        this.state.invitations[idx] = { ...data, id: this.state.editingId };
+                    } else {
+                        this.state.invitations.push({ ...data, id: Date.now().toString() });
+                    }
+                    this.saveLocal();
                 } else {
-                    await setDoc(doc(collection(db, 'artifacts', appId, 'public', 'data', 'invitations')), data);
+                    const docId = this.state.editingId || doc(collection(this.db, 'temp')).id;
+                    await setDoc(doc(this.db, 'artifacts', this.appId, 'public', 'data', 'invitations', docId), data);
                 }
                 this.closeModal();
             },
 
-            async updateStatus(invId, name, status) {
-                if (!db) return;
+            async deleteGuest(id) {
+                if(!confirm("Are you sure you want to delete this invitation?")) return;
+                if (this.isLocalMode) {
+                    this.state.invitations = this.state.invitations.filter(i => i.id !== id);
+                    this.saveLocal();
+                } else {
+                    await deleteDoc(doc(this.db, 'artifacts', this.appId, 'public', 'data', 'invitations', id));
+                }
+                this.closeModal();
+            },
+
+            async updateRSVPStatus(invId, name, status) {
                 const inv = this.state.invitations.find(i => i.id === invId);
                 const responses = { ...inv.responses, [name]: status };
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invId), { responses });
-                if (this.state.selectedInv && this.state.selectedInv.id === invId) {
-                    this.state.selectedInv.responses = responses;
+                
+                if (this.isLocalMode) {
+                    inv.responses = responses;
+                    this.saveLocal();
+                } else {
+                    await updateDoc(doc(this.db, 'artifacts', this.appId, 'public', 'data', 'invitations', invId), { responses });
                 }
             },
 
@@ -331,11 +358,24 @@
                 display.innerHTML = "";
                 document.getElementById('qr-modal-group').innerText = inv.groupName;
                 const url = `${window.location.origin}${window.location.pathname}?code=${inv.inviteCode}`;
-                new QRCode(display, { text: url, width: 200, height: 200 });
+                new QRCode(display, { 
+                    text: url, 
+                    width: 200, 
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
                 document.getElementById('qr-modal').classList.remove('hidden');
             },
 
             closeQRModal() { document.getElementById('qr-modal').classList.add('hidden'); },
+
+            toggleSecurity() {
+                this.state.settings.screenshotProtection = !this.state.settings.screenshotProtection;
+                this.applySecuritySettings();
+                this.render();
+            },
 
             render() {
                 const root = document.getElementById('app-content');
@@ -344,123 +384,171 @@
                 if (!root) return;
 
                 if (!this.state.isUnlocked) {
-                    if(nav) nav.classList.add('hidden');
-                    root.innerHTML = this.views.gatekeeper();
+                    nav?.classList.add('hidden');
+                    root.innerHTML = this.views.gatekeeper.call(this);
                     return;
                 }
 
-                if(nav) nav.classList.remove('hidden');
+                nav?.classList.remove('hidden');
                 if(navLinks) {
-                    const canViewFull = this.state.isAdmin || this.hasCompletedRSVP(this.state.selectedInv);
                     navLinks.innerHTML = `
-                        ${canViewFull ? `
-                            <button onclick="App.setView('home')" class="text-[10px] uppercase font-bold ${this.state.view==='home'?'text-accent':'text-gray-400'}">Home</button>
-                            <button onclick="App.setView('details')" class="text-[10px] uppercase font-bold ${this.state.view==='details'?'text-accent':'text-gray-400'}">Details</button>
-                        ` : ''}
-                        ${this.state.isAdmin ? `
-                            <button onclick="App.setView('admin')" class="text-[10px] uppercase font-bold ${this.state.view==='admin'?'text-accent':'text-gray-400'}">Admin</button>
-                        ` : `
-                            <button onclick="App.setView('rsvp')" class="bg-royal text-white px-6 py-2 rounded-full text-[10px] uppercase font-bold">My RSVP</button>
-                        `}
+                        <button onclick="App.setView('home')" class="text-[10px] uppercase font-bold tracking-widest ${this.state.view==='home'?'text-accent':'text-gray-400'}">Home</button>
+                        ${this.state.isAdmin ? 
+                            `<button onclick="App.setView('admin')" class="text-[10px] uppercase font-bold tracking-widest ${this.state.view==='admin'?'text-accent':'text-gray-400'}">Admin Panel</button>` : 
+                            `<button onclick="App.setView('rsvp')" class="bg-royal text-white px-6 py-2 rounded-full text-[10px] uppercase font-bold">My RSVP</button>`
+                        }
                     `;
                 }
 
-                root.innerHTML = this.views[this.state.view] ? this.views[this.state.view].call(this.views) : this.views.home();
-                if(this.state.view === 'admin') this.initAdminCharts();
+                root.innerHTML = this.views[this.state.view] ? this.views[this.state.view].call(this) : this.views.home();
+                
+                if(this.state.view === 'admin') {
+                    this.initAdminCharts();
+                    this.renderTableQRs();
+                }
+            },
+
+            renderTableQRs() {
+                setTimeout(() => {
+                    this.state.invitations.forEach(inv => {
+                        const el = document.getElementById(`mini-qr-${inv.id}`);
+                        if (el && el.innerHTML === "") {
+                            const url = `${window.location.origin}${window.location.pathname}?code=${inv.inviteCode}`;
+                            new QRCode(el, { text: url, width: 40, height: 40 });
+                        }
+                    });
+                }, 200);
             },
 
             views: {
-                gatekeeper: () => `
-                    <section class="h-screen gatekeeper-bg flex items-center justify-center p-6 text-center">
-                        <div class="max-w-md w-full fade-in">
-                            <h1 class="font-serif text-6xl mb-4 text-white">M <span class="text-white/20">&</span> C</h1>
-                            <p class="text-gray-400 text-sm mb-12 font-light">Enter your invite code to enter.</p>
-                            <input type="text" id="unlock-code" placeholder="CODE" class="w-full bg-navy-900 border border-white/10 text-center text-xl tracking-[0.3em] py-6 rounded-3xl mb-4 uppercase">
-                            <button onclick="App.unlockWithCode()" class="w-full bg-royal text-white py-6 rounded-3xl font-bold uppercase text-[11px] tracking-widest">Login</button>
-                        </div>
-                    </section>
-                `,
+                gatekeeper() {
+                    return `
+                        <section class="h-screen gatekeeper-bg flex items-center justify-center p-6 text-center">
+                            <div class="max-w-md w-full fade-in">
+                                <h4 class="text-[9px] uppercase tracking-[1em] mb-4 text-accent font-black">Private Portal</h4>
+                                <h1 class="font-serif text-6xl mb-4 text-white">M <span class="text-white/20">&</span> C</h1>
+                                <p class="text-gray-400 text-sm mb-12">Please enter your unique access code.</p>
+                                <div class="relative mb-4">
+                                    <input type="text" id="unlock-code" placeholder="ENTER CODE" class="w-full bg-navy-900 border border-white/10 text-center text-xl py-6 rounded-3xl uppercase font-mono tracking-widest">
+                                </div>
+                                <button onclick="App.unlockWithCode()" class="w-full bg-royal text-white py-6 rounded-3xl font-bold uppercase text-[11px] tracking-widest hover:bg-royal-hover transition-all">Unlock Dashboard</button>
+                                <p class="mt-8 text-[9px] uppercase text-white/20 tracking-[0.4em] font-black">Authorized Guests Only</p>
+                            </div>
+                        </section>
+                    `;
+                },
                 home: () => `
                     <section class="h-[90vh] hero-gradient flex items-center justify-center text-center px-6">
                         <div class="fade-in max-w-5xl">
-                            <h4 class="text-[10px] uppercase tracking-[0.8em] mb-6 text-accent font-bold">The Wedding of</h4>
-                            <h1 class="font-serif text-6xl md:text-[8rem] mb-6 text-white leading-none">Michael <span class="italic text-white/30">&</span> Camille</h1>
-                            <p class="font-serif text-2xl italic text-blue-100/60">January 18, 2027</p>
+                            <h4 class="text-[10px] uppercase tracking-[1em] mb-8 text-accent font-bold">The Wedding Celebration of</h4>
+                            <h1 class="font-serif text-7xl md:text-[9rem] mb-8 text-white leading-none">Michael & Camille</h1>
+                            <div class="flex items-center justify-center gap-8 text-blue-100/60 font-serif text-xl md:text-2xl italic">
+                                <span>Jan 18, 2027</span>
+                                <span class="w-1.5 h-1.5 bg-accent rounded-full"></span>
+                                <span>Manila, Philippines</span>
+                            </div>
                         </div>
                     </section>
                 `,
-                details: () => `
-                    <div class="py-32 px-6 max-w-4xl mx-auto text-center fade-in">
-                        <h2 class="font-serif text-5xl mb-12">Details</h2>
-                        <div class="grid md:grid-cols-2 gap-8">
-                            <div class="details-card p-10 rounded-3xl">
-                                <h3 class="font-serif text-2xl mb-4 text-accent">Ceremony</h3>
-                                <p class="text-sm">1:00 PM • San Rafael Church</p>
-                            </div>
-                            <div class="details-card p-10 rounded-3xl">
-                                <h3 class="font-serif text-2xl mb-4 text-accent">Reception</h3>
-                                <p class="text-sm">5:00 PM • Grand Ballroom</p>
-                            </div>
-                        </div>
-                    </div>
-                `,
-                rsvp: () => {
-                    const inv = App.state.selectedInv;
-                    if(!inv) return `<div class="p-24 text-center">Admin View</div>`;
-                    const finished = App.hasCompletedRSVP(inv);
+                rsvp: function() {
+                    const inv = this.state.selectedInv;
                     return `
                         <div class="py-32 px-6 max-w-2xl mx-auto fade-in">
-                            <div class="details-card p-12 rounded-[3rem]">
-                                <h2 class="font-serif text-4xl text-center mb-12">${inv.groupName} RSVP</h2>
-                                <div class="space-y-4">
+                            <div class="details-card p-12 rounded-[3.5rem] border-white/5">
+                                <div class="text-center mb-12">
+                                    <h4 class="text-[9px] uppercase tracking-widest text-accent mb-2 font-black">RSVP Details</h4>
+                                    <h2 class="font-serif text-4xl">${inv.groupName}</h2>
+                                </div>
+                                <div class="space-y-6">
                                     ${inv.invitedNames.map(name => `
-                                        <div class="flex flex-col sm:flex-row justify-between items-center p-6 bg-white/5 rounded-2xl gap-4">
-                                            <span class="font-bold">${name}</span>
-                                            <select onchange="App.updateStatus('${inv.id}', '${name}', this.value)" class="w-full sm:w-auto p-3 rounded-xl text-[10px] font-black uppercase">
-                                                <option value="pending" ${inv.responses[name] === 'pending' ? 'selected' : ''}>Pending</option>
-                                                <option value="accepted" ${inv.responses[name] === 'accepted' ? 'selected' : ''}>Attending</option>
-                                                <option value="declined" ${inv.responses[name] === 'declined' ? 'selected' : ''}>Declining</option>
+                                        <div class="p-8 bg-white/[0.03] rounded-[2rem] border border-white/5 flex flex-col sm:flex-row justify-between items-center gap-6">
+                                            <span class="font-bold text-lg">${name}</span>
+                                            <select onchange="App.updateRSVPStatus('${inv.id}', '${name}', this.value)" class="p-4 rounded-2xl text-[10px] font-black uppercase bg-navy-800 border-white/10 w-full sm:w-auto">
+                                                <option value="pending" ${inv.responses[name] === 'pending' ? 'selected' : ''}>⏳ Pending</option>
+                                                <option value="accepted" ${inv.responses[name] === 'accepted' ? 'selected' : ''}>✅ Attending</option>
+                                                <option value="declined" ${inv.responses[name] === 'declined' ? 'selected' : ''}>❌ Declined</option>
                                             </select>
                                         </div>
                                     `).join('')}
                                 </div>
-                                <button onclick="App.setView('home')" class="w-full ${finished ? 'bg-royal' : 'bg-gray-700 opacity-50'} text-white mt-12 py-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest">
-                                    ${finished ? 'Enter Website' : 'Complete RSVP'}
-                                </button>
+                                <div class="mt-12 pt-8 border-t border-white/5 text-center">
+                                    <p class="text-xs text-gray-500 mb-8 leading-relaxed">Responses are automatically saved. You can return here anytime to update your status before the deadline.</p>
+                                    <button onclick="App.setView('home')" class="w-full bg-white text-navy-950 py-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest">Return to Home</button>
+                                </div>
                             </div>
                         </div>
                     `;
                 },
-                admin: () => `
-                    <div class="p-12 max-w-7xl mx-auto fade-in">
-                        <div class="flex justify-between items-end mb-12">
-                            <h2 class="font-serif text-5xl">Admin</h2>
-                            <button onclick="App.openModal()" class="bg-royal px-8 py-4 rounded-xl text-[10px] font-black uppercase">Add Group</button>
-                        </div>
-                        <div class="grid md:grid-cols-2 gap-6 mb-12">
-                            <div class="details-card p-8 rounded-3xl h-64 flex flex-col">
-                                <h4 class="text-[10px] uppercase font-black text-gray-500 mb-4">Response Stats</h4>
-                                <div class="flex-grow relative"><canvas id="adminChart"></canvas></div>
+                admin: function() {
+                    return `
+                        <div class="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
+                            <div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
+                                <div>
+                                    <h4 class="text-[10px] uppercase tracking-[0.5em] text-accent mb-2 font-black">Management Console</h4>
+                                    <h2 class="font-serif text-5xl">Guest Registry</h2>
+                                </div>
+                                <div class="flex gap-4">
+                                    <button onclick="App.toggleSecurity()" class="px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 ${this.state.settings.screenshotProtection ? 'bg-accent/10 text-accent border-accent/20' : 'text-gray-500'}">
+                                        <i class="fas fa-shield-alt mr-2"></i> Security
+                                    </button>
+                                    <button onclick="App.openGuestModal()" class="bg-royal px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-royal-hover transition-all">
+                                        <i class="fas fa-plus mr-2"></i> Create Invitation
+                                    </button>
+                                </div>
                             </div>
-                            <div class="details-card p-8 rounded-3xl flex flex-col justify-center items-center">
-                                <button onclick="App.toggleScreenshotProtection()" class="px-6 py-2 rounded-full border border-white/10 text-[10px] ${App.state.settings.screenshotProtection ? 'bg-accent/20 text-accent' : 'bg-white/5'}">
-                                    Screenshot Protection: ${App.state.settings.screenshotProtection ? 'ON' : 'OFF'}
-                                </button>
+
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                                <div class="details-card p-8 rounded-3xl h-64 md:col-span-2"><canvas id="adminChart"></canvas></div>
+                                <div class="details-card p-8 rounded-3xl flex flex-col items-center justify-center text-center">
+                                    <span class="text-5xl font-serif mb-2">${this.state.invitations.length}</span>
+                                    <span class="text-[9px] uppercase tracking-widest opacity-40 font-black">Total Groups</span>
+                                </div>
+                                <div class="details-card p-8 rounded-3xl flex flex-col items-center justify-center text-center">
+                                    <div class="w-3 h-3 rounded-full ${this.isLocalMode ? 'bg-red-500 shadow-[0_0_10px_#ef4444]' : 'bg-green-500 shadow-[0_0_10px_#22c55e]'} mb-4"></div>
+                                    <span class="text-[10px] uppercase font-black tracking-widest mb-1">${this.isLocalMode ? 'LOCAL STORAGE' : 'CLOUD LIVE'}</span>
+                                    <span class="text-[9px] opacity-40">System Status</span>
+                                </div>
+                            </div>
+
+                            <div class="details-card rounded-[2.5rem] overflow-hidden border-white/5">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left">
+                                        <thead class="bg-white/[0.02] text-[9px] uppercase tracking-widest text-gray-500 border-b border-white/5">
+                                            <tr>
+                                                <th class="p-8">QR</th>
+                                                <th class="p-8">Guest Group / Members</th>
+                                                <th class="p-8 text-center">Access Code</th>
+                                                <th class="p-8 text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-white/5">
+                                            ${this.state.invitations.map(inv => `
+                                                <tr class="hover:bg-white/[0.02] transition-colors">
+                                                    <td class="p-8">
+                                                        <div id="mini-qr-${inv.id}" class="mini-qr cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onclick="App.showQR('${inv.id}')"></div>
+                                                    </td>
+                                                    <td class="p-8">
+                                                        <div class="font-bold text-lg text-white mb-1">${inv.groupName}</div>
+                                                        <div class="text-[10px] text-gray-500 uppercase tracking-wider">${inv.invitedNames.join(' • ')}</div>
+                                                    </td>
+                                                    <td class="p-8 text-center">
+                                                        <span class="font-mono text-sm px-4 py-2 bg-navy-800 rounded-lg text-accent border border-white/5 uppercase">${inv.inviteCode}</span>
+                                                    </td>
+                                                    <td class="p-8 text-right">
+                                                        <button onclick="App.openGuestModal('${inv.id}')" class="w-12 h-12 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                                                            <i class="fas fa-ellipsis-v"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                            ${this.state.invitations.length === 0 ? `<tr><td colspan="4" class="p-20 text-center text-gray-600 uppercase text-[10px] tracking-[0.4em]">No invitations created yet</td></tr>` : ''}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                        <div class="details-card rounded-3xl overflow-hidden">
-                            <table class="w-full text-left">
-                                <thead class="bg-white/5 text-[9px] uppercase"><tr><th class="p-6">Group</th><th class="p-6">Code</th><th class="p-6">Status</th><th class="p-6">Actions</th></tr></thead>
-                                <tbody class="divide-y divide-white/5">
-                                    ${App.state.invitations.map(inv => {
-                                        const counts = Object.values(inv.responses || {}).reduce((a,c) => { a[c]++; return a; }, {accepted:0, declined:0, pending:0});
-                                        return `<tr><td class="p-6 font-bold">${inv.groupName}</td><td class="p-6 font-mono text-accent">${inv.inviteCode}</td><td class="p-6 text-[10px]">A:${counts.accepted} D:${counts.declined} P:${counts.pending}</td><td class="p-6"><button onclick="App.showQR('${inv.id}')" class="mr-4 opacity-50 hover:opacity-100"><i class="fas fa-qrcode"></i></button><button onclick="App.openModal('${inv.id}')" class="opacity-50 hover:opacity-100"><i class="fas fa-edit"></i></button></td></tr>`
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `
+                    `;
+                }
             },
 
             initAdminCharts() {
@@ -468,14 +556,43 @@
                     const ctx = document.getElementById('adminChart');
                     if (!ctx) return;
                     let y=0, n=0, p=0;
-                    this.state.invitations.forEach(i => Object.values(i.responses||{}).forEach(r => { if(r==='accepted')y++; else if(r==='declined')n++; else p++; }));
-                    new Chart(ctx, { type:'doughnut', data:{ labels:['Yes','No','?'], datasets:[{ data:[y,n,p], backgroundColor:['#38bdf8','#ef4444','rgba(255,255,255,0.1)'], borderWidth:0 }] }, options:{ maintainAspectRatio:false, cutout:'85%', plugins:{ legend:{ display:false } } } });
+                    this.state.invitations.forEach(i => {
+                        Object.values(i.responses||{}).forEach(r => {
+                            if(r==='accepted') y++;
+                            else if(r==='declined') n++;
+                            else p++;
+                        });
+                    });
+
+                    if (window.myChart) window.myChart.destroy();
+                    window.myChart = new Chart(ctx, { 
+                        type: 'doughnut', 
+                        data: { 
+                            labels: ['Attending', 'Declined', 'Pending'], 
+                            datasets: [{ 
+                                data: [y, n, p], 
+                                backgroundColor: ['#38bdf8', '#ef4444', 'rgba(255,255,255,0.05)'],
+                                borderColor: 'transparent',
+                                hoverOffset: 10
+                            }] 
+                        }, 
+                        options: { 
+                            maintainAspectRatio: false, 
+                            cutout: '75%',
+                            plugins: { 
+                                legend: { 
+                                    position: 'right',
+                                    labels: { color: '#64748b', font: { size: 10, weight: 'bold' }, padding: 20 }
+                                } 
+                            } 
+                        } 
+                    });
                 }, 100);
             }
         };
 
         window.App = App;
-        App.init();
+        window.onload = () => App.init();
     </script>
 </body>
 </html>
