@@ -46,17 +46,7 @@
         .gatekeeper-bg { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); }
         #qr-display img { margin: 0 auto; border: 10px solid white; border-radius: 10px; }
 
-        /* Privacy Shield Overlay */
-        #privacy-shield {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: black;
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
+        #privacy-shield { display: none; position: fixed; inset: 0; background: black; z-index: 9999; align-items: center; justify-content: center; text-align: center; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -83,35 +73,33 @@
             <div class="cursor-pointer group" onclick="App.setView('home')">
                 <span class="font-serif text-2xl font-bold text-white tracking-tighter">M<span class="text-accent">&</span>C</span>
             </div>
-            <div id="nav-links" class="flex items-center space-x-8">
-                <!-- Links dynamically visibility based on RSVP status -->
-            </div>
+            <div id="nav-links" class="flex items-center space-x-8"></div>
         </div>
     </nav>
 
-    <!-- Main Content Area -->
+    <!-- Main Content -->
     <main id="app-content" class="flex-grow"></main>
 
-    <!-- Modals -->
+    <!-- Admin Modals -->
     <div id="modal-container" class="fixed inset-0 z-[60] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-navy-900 w-full max-w-lg rounded-[2.5rem] p-8 md:p-12 border border-white/10 fade-in relative">
+        <div class="bg-navy-900 w-full max-w-lg rounded-[2.5rem] p-8 md:p-12 border border-white/10 fade-in relative text-center">
             <button onclick="App.closeModal()" class="absolute top-8 right-8 text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
             <h2 id="modal-title" class="font-serif text-3xl mb-8 text-white">Guest Management</h2>
             <div class="space-y-5 text-left">
                 <div>
                     <label class="text-[10px] uppercase font-black text-accent tracking-widest block mb-2">Group Name</label>
-                    <input type="text" id="modal-group-name" placeholder="The Cruz Family" class="w-full p-4 rounded-xl">
+                    <input type="text" id="modal-group-name" placeholder="The Smith Family" class="w-full p-4 rounded-xl">
                 </div>
                 <div>
                     <label class="text-[10px] uppercase font-black text-accent tracking-widest block mb-2">Access Code</label>
                     <div class="flex gap-2">
-                        <input type="text" id="modal-invite-code" placeholder="GUEST123" class="w-full p-4 rounded-xl font-mono uppercase">
+                        <input type="text" id="modal-invite-code" placeholder="XYZ123" class="w-full p-4 rounded-xl font-mono uppercase">
                         <button onclick="App.generateRandomCode()" class="bg-white/10 px-4 rounded-xl hover:bg-white/20"><i class="fas fa-random"></i></button>
                     </div>
                 </div>
                 <div>
                     <label class="text-[10px] uppercase font-black text-accent tracking-widest block mb-2">Names (Comma Separated)</label>
-                    <textarea id="modal-guest-names" placeholder="Name 1, Name 2" class="w-full p-4 rounded-xl h-24 resize-none"></textarea>
+                    <textarea id="modal-guest-names" placeholder="Alice, Bob" class="w-full p-4 rounded-xl h-24 resize-none"></textarea>
                 </div>
                 <button onclick="App.saveFromModal()" class="w-full bg-royal text-white py-5 rounded-2xl font-bold uppercase tracking-widest text-[10px] mt-4">Save Invitation</button>
             </div>
@@ -132,13 +120,22 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'wedding-portal-v1';
-        const ADMIN_ACCESS_CODE = "ADMIN99"; // Bypass code
+        // Environment Setup with Error Handling
+        let db, auth, appId;
+        try {
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'wedding-portal-v1';
+            
+            if (firebaseConfig) {
+                const firebaseApp = initializeApp(firebaseConfig);
+                auth = getAuth(firebaseApp);
+                db = getFirestore(firebaseApp);
+            }
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+        }
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        const auth = getAuth(firebaseApp);
-        const db = getFirestore(firebaseApp);
+        const ADMIN_ACCESS_CODE = "ADMIN99";
 
         const App = {
             state: {
@@ -154,19 +151,25 @@
 
             async init() {
                 this.initPrivacyListeners();
+                if (!auth) {
+                    console.error("Auth not initialized. Config missing?");
+                    this.render();
+                    return;
+                }
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         this.state.user = user;
-                        // Always run data binding after auth is established
                         this.bindSettings();
                         this.bindRealtime();
                     } else {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
+                        try {
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch(e) { console.error("Auth failed:", e); }
                     }
                 });
             },
@@ -174,17 +177,12 @@
             initPrivacyListeners() {
                 window.addEventListener('keydown', (e) => {
                     if (!this.state.settings.screenshotProtection) return;
-                    const isScreenshot = (e.key === 'PrintScreen') || 
-                                       (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5'));
+                    const isScreenshot = (e.key === 'PrintScreen') || (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5'));
                     if (isScreenshot) this.triggerPrivacyShield();
                 });
-
                 window.addEventListener('blur', () => {
-                    if (this.state.settings.screenshotProtection && this.state.isUnlocked) {
-                        this.triggerPrivacyShield();
-                    }
+                    if (this.state.settings.screenshotProtection && this.state.isUnlocked) this.triggerPrivacyShield();
                 });
-
                 window.addEventListener('focus', () => {
                     const shield = document.getElementById('privacy-shield');
                     if (shield) shield.style.display = 'none';
@@ -197,9 +195,8 @@
             },
 
             bindSettings() {
-                if (!this.state.user) return;
-                // FIX: Path segments must be even. artifacts/{appId}/public/data/settings/general
-                // Previous was .../public/settings/general (5 segments). Correct is even segments.
+                if (!db || !this.state.user) return;
+                // Path: artifacts/{appId}/public/data/settings/general (Even segments: 6)
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general');
                 onSnapshot(docRef, (docSnap) => {
                     if(docSnap.exists()) {
@@ -208,11 +205,11 @@
                     } else {
                         setDoc(docRef, { screenshotProtection: false });
                     }
-                }, (error) => console.error("Settings sync error:", error));
+                }, (err) => console.error("Settings sync fail:", err));
             },
 
             bindRealtime() {
-                if (!this.state.user) return;
+                if (!db || !this.state.user) return;
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'invitations');
                 onSnapshot(colRef, (snapshot) => {
                     this.state.invitations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -223,7 +220,7 @@
                         loader.classList.add('opacity-0');
                         setTimeout(() => loader.classList.add('hidden'), 500);
                     }
-                }, (error) => console.error("Data sync error:", error));
+                }, (err) => console.error("Data sync fail:", err));
             },
 
             checkQRAutoLogin() {
@@ -237,28 +234,21 @@
             unlockWithCode() {
                 const codeInput = document.getElementById('unlock-code');
                 if (!codeInput) return;
-                const code = codeInput.value.trim().toUpperCase();
-                this.processUnlock(code);
+                this.processUnlock(codeInput.value.trim().toUpperCase());
             },
 
             processUnlock(code) {
                 if (code === ADMIN_ACCESS_CODE) {
                     this.state.isAdmin = true;
                     this.state.isUnlocked = true;
-                    this.state.selectedInv = null;
                     this.setView('admin');
                     return;
                 }
-
                 const found = this.state.invitations.find(inv => (inv.inviteCode || "").toUpperCase() === code);
                 if (found) {
                     this.state.isUnlocked = true;
                     this.state.selectedInv = found;
-                    if (!this.hasCompletedRSVP(found)) {
-                        this.setView('rsvp');
-                    } else {
-                        this.setView('home');
-                    }
+                    this.setView(this.hasCompletedRSVP(found) ? 'home' : 'rsvp');
                 } else {
                     alert("Invalid Access Code.");
                 }
@@ -284,11 +274,9 @@
             },
 
             async toggleScreenshotProtection() {
-                if (!this.state.user) return;
+                if (!db) return;
                 const newVal = !this.state.settings.screenshotProtection;
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general'), {
-                    screenshotProtection: newVal
-                });
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general'), { screenshotProtection: newVal });
             },
 
             openModal(id = null) {
@@ -308,7 +296,7 @@
             },
 
             async saveFromModal() {
-                if (!this.state.user) return;
+                if (!db) return;
                 const groupName = document.getElementById('modal-group-name').value;
                 const inviteCode = document.getElementById('modal-invite-code').value.toUpperCase();
                 const names = document.getElementById('modal-guest-names').value.split(',').map(n => n.trim()).filter(n => n);
@@ -328,7 +316,7 @@
             },
 
             async updateStatus(invId, name, status) {
-                if (!this.state.user) return;
+                if (!db) return;
                 const inv = this.state.invitations.find(i => i.id === invId);
                 const responses = { ...inv.responses, [name]: status };
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invId), { responses });
@@ -343,7 +331,7 @@
                 display.innerHTML = "";
                 document.getElementById('qr-modal-group').innerText = inv.groupName;
                 const url = `${window.location.origin}${window.location.pathname}?code=${inv.inviteCode}`;
-                new QRCode(display, { text: url, width: 200, height: 200, colorDark: "#020617", colorLight: "#ffffff" });
+                new QRCode(display, { text: url, width: 200, height: 200 });
                 document.getElementById('qr-modal').classList.remove('hidden');
             },
 
@@ -354,20 +342,16 @@
                 const nav = document.getElementById('main-nav');
                 const navLinks = document.getElementById('nav-links');
                 if (!root) return;
-                
+
                 if (!this.state.isUnlocked) {
                     if(nav) nav.classList.add('hidden');
                     root.innerHTML = this.views.gatekeeper();
                     return;
                 }
 
-                if(nav) {
-                    nav.classList.remove('hidden');
-                    nav.classList.add('flex');
-                }
-                
-                const canViewFull = this.state.isAdmin || this.hasCompletedRSVP(this.state.selectedInv);
+                if(nav) nav.classList.remove('hidden');
                 if(navLinks) {
+                    const canViewFull = this.state.isAdmin || this.hasCompletedRSVP(this.state.selectedInv);
                     navLinks.innerHTML = `
                         ${canViewFull ? `
                             <button onclick="App.setView('home')" class="text-[10px] uppercase font-bold ${this.state.view==='home'?'text-accent':'text-gray-400'}">Home</button>
@@ -381,15 +365,7 @@
                     `;
                 }
 
-                const viewMap = {
-                    gatekeeper: this.views.gatekeeper,
-                    home: this.views.home,
-                    details: this.views.details,
-                    rsvp: () => this.views.rsvpForm(this.state.selectedInv),
-                    admin: this.views.admin
-                };
-
-                root.innerHTML = (viewMap[this.state.view] || this.views.home).call(this.views);
+                root.innerHTML = this.views[this.state.view] ? this.views[this.state.view].call(this.views) : this.views.home();
                 if(this.state.view === 'admin') this.initAdminCharts();
             },
 
@@ -397,10 +373,9 @@
                 gatekeeper: () => `
                     <section class="h-screen gatekeeper-bg flex items-center justify-center p-6 text-center">
                         <div class="max-w-md w-full fade-in">
-                            <h4 class="text-[10px] uppercase tracking-[0.5em] text-accent font-black mb-6">Private Invitation</h4>
-                            <h1 class="font-serif text-5xl md:text-6xl mb-4 text-white">M <span class="text-white/20">&</span> C</h1>
-                            <p class="text-gray-400 text-sm mb-12 font-light">Please enter your 6-digit access code.</p>
-                            <input type="text" id="unlock-code" placeholder="ACCESS CODE" class="w-full bg-navy-900 border border-white/10 text-center text-xl tracking-[0.3em] py-6 rounded-3xl mb-4 uppercase">
+                            <h1 class="font-serif text-6xl mb-4 text-white">M <span class="text-white/20">&</span> C</h1>
+                            <p class="text-gray-400 text-sm mb-12 font-light">Enter your invite code to enter.</p>
+                            <input type="text" id="unlock-code" placeholder="CODE" class="w-full bg-navy-900 border border-white/10 text-center text-xl tracking-[0.3em] py-6 rounded-3xl mb-4 uppercase">
                             <button onclick="App.unlockWithCode()" class="w-full bg-royal text-white py-6 rounded-3xl font-bold uppercase text-[11px] tracking-widest">Login</button>
                         </div>
                     </section>
@@ -408,15 +383,15 @@
                 home: () => `
                     <section class="h-[90vh] hero-gradient flex items-center justify-center text-center px-6">
                         <div class="fade-in max-w-5xl">
-                            <h4 class="text-[10px] uppercase tracking-[0.8em] mb-6 text-accent font-bold">You are invited</h4>
+                            <h4 class="text-[10px] uppercase tracking-[0.8em] mb-6 text-accent font-bold">The Wedding of</h4>
                             <h1 class="font-serif text-6xl md:text-[8rem] mb-6 text-white leading-none">Michael <span class="italic text-white/30">&</span> Camille</h1>
-                            <p class="font-serif text-2xl italic mb-12 text-blue-100/60">January 18, 2027 • Legazpi City</p>
+                            <p class="font-serif text-2xl italic text-blue-100/60">January 18, 2027</p>
                         </div>
                     </section>
                 `,
                 details: () => `
                     <div class="py-32 px-6 max-w-4xl mx-auto text-center fade-in">
-                        <h2 class="font-serif text-5xl mb-12">Event Schedule</h2>
+                        <h2 class="font-serif text-5xl mb-12">Details</h2>
                         <div class="grid md:grid-cols-2 gap-8">
                             <div class="details-card p-10 rounded-3xl">
                                 <h3 class="font-serif text-2xl mb-4 text-accent">Ceremony</h3>
@@ -424,20 +399,19 @@
                             </div>
                             <div class="details-card p-10 rounded-3xl">
                                 <h3 class="font-serif text-2xl mb-4 text-accent">Reception</h3>
-                                <p class="text-sm">5:00 PM • The Grand Ballroom</p>
+                                <p class="text-sm">5:00 PM • Grand Ballroom</p>
                             </div>
                         </div>
                     </div>
                 `,
-                rsvpForm: (inv) => {
-                    if(!inv) return `<div class="p-24 text-center">Admin access granted. No personal RSVP required.</div>`;
+                rsvp: () => {
+                    const inv = App.state.selectedInv;
+                    if(!inv) return `<div class="p-24 text-center">Admin View</div>`;
                     const finished = App.hasCompletedRSVP(inv);
                     return `
                         <div class="py-32 px-6 max-w-2xl mx-auto fade-in">
                             <div class="details-card p-12 rounded-[3rem]">
-                                <h4 class="text-[10px] uppercase text-accent font-black tracking-widest mb-4 text-center">RSVP Required</h4>
-                                <h2 class="font-serif text-4xl text-center mb-4">${inv.groupName}</h2>
-                                <p class="text-center text-xs text-gray-500 mb-12">Please confirm the attendance of each guest below.</p>
+                                <h2 class="font-serif text-4xl text-center mb-12">${inv.groupName} RSVP</h2>
                                 <div class="space-y-4">
                                     ${inv.invitedNames.map(name => `
                                         <div class="flex flex-col sm:flex-row justify-between items-center p-6 bg-white/5 rounded-2xl gap-4">
@@ -450,9 +424,8 @@
                                         </div>
                                     `).join('')}
                                 </div>
-                                <button onclick="App.setView('home')" 
-                                    class="w-full ${finished ? 'bg-royal' : 'bg-gray-700 pointer-events-none opacity-50'} text-white mt-12 py-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest transition-all">
-                                    ${finished ? 'Proceed to Website' : 'Complete RSVP to Proceed'}
+                                <button onclick="App.setView('home')" class="w-full ${finished ? 'bg-royal' : 'bg-gray-700 opacity-50'} text-white mt-12 py-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest">
+                                    ${finished ? 'Enter Website' : 'Complete RSVP'}
                                 </button>
                             </div>
                         </div>
@@ -461,17 +434,8 @@
                 admin: () => `
                     <div class="p-12 max-w-7xl mx-auto fade-in">
                         <div class="flex justify-between items-end mb-12">
-                            <div>
-                                <h2 class="font-serif text-5xl">Dashboard</h2>
-                                <div class="flex items-center gap-4 mt-2">
-                                    <span class="text-[10px] font-black uppercase text-gray-500">Protection:</span>
-                                    <button onclick="App.toggleScreenshotProtection()" class="flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 text-[9px] font-bold ${App.state.settings.screenshotProtection ? 'bg-accent/20 text-accent border-accent/50' : 'bg-white/5 text-gray-500'}">
-                                        <i class="fas ${App.state.settings.screenshotProtection ? 'fa-lock' : 'fa-lock-open'}"></i>
-                                        Screenshot protection ${App.state.settings.screenshotProtection ? 'ENABLED' : 'DISABLED'}
-                                    </button>
-                                </div>
-                            </div>
-                            <button onclick="App.openModal()" class="bg-royal px-8 py-4 rounded-xl text-[10px] font-black uppercase">Add Guest</button>
+                            <h2 class="font-serif text-5xl">Admin</h2>
+                            <button onclick="App.openModal()" class="bg-royal px-8 py-4 rounded-xl text-[10px] font-black uppercase">Add Group</button>
                         </div>
                         <div class="grid md:grid-cols-2 gap-6 mb-12">
                             <div class="details-card p-8 rounded-3xl h-64 flex flex-col">
@@ -479,35 +443,19 @@
                                 <div class="flex-grow relative"><canvas id="adminChart"></canvas></div>
                             </div>
                             <div class="details-card p-8 rounded-3xl flex flex-col justify-center items-center">
-                                <span class="text-accent text-[10px] font-black uppercase mb-2 tracking-[0.3em]">Confirmed Attendance</span>
-                                <span class="text-7xl font-serif">${App.state.invitations.reduce((acc, i) => acc + Object.values(i.responses || {}).filter(v => v === 'accepted').length, 0)}</span>
+                                <button onclick="App.toggleScreenshotProtection()" class="px-6 py-2 rounded-full border border-white/10 text-[10px] ${App.state.settings.screenshotProtection ? 'bg-accent/20 text-accent' : 'bg-white/5'}">
+                                    Screenshot Protection: ${App.state.settings.screenshotProtection ? 'ON' : 'OFF'}
+                                </button>
                             </div>
                         </div>
                         <div class="details-card rounded-3xl overflow-hidden">
                             <table class="w-full text-left">
-                                <thead class="bg-white/5 text-[9px] font-black text-gray-500 uppercase">
-                                    <tr><th class="p-6">Group</th><th class="p-6">Code</th><th class="p-6">RSVP Status</th><th class="p-6 text-right">Actions</th></tr>
-                                </thead>
+                                <thead class="bg-white/5 text-[9px] uppercase"><tr><th class="p-6">Group</th><th class="p-6">Code</th><th class="p-6">Status</th><th class="p-6">Actions</th></tr></thead>
                                 <tbody class="divide-y divide-white/5">
                                     ${App.state.invitations.map(inv => {
                                         const counts = Object.values(inv.responses || {}).reduce((a,c) => { a[c]++; return a; }, {accepted:0, declined:0, pending:0});
-                                        return `
-                                        <tr>
-                                            <td class="p-6 font-bold">${inv.groupName}</td>
-                                            <td class="p-6 font-mono text-accent text-xs">${inv.inviteCode}</td>
-                                            <td class="p-6">
-                                                <div class="flex gap-4 text-[10px]">
-                                                    <span class="text-accent"><i class="fas fa-check mr-1"></i>${counts.accepted}</span>
-                                                    <span class="text-red-500"><i class="fas fa-times mr-1"></i>${counts.declined}</span>
-                                                    <span class="text-gray-500"><i class="fas fa-clock mr-1"></i>${counts.pending}</span>
-                                                </div>
-                                            </td>
-                                            <td class="p-6 text-right">
-                                                <button onclick="App.showQR('${inv.id}')" class="text-white/40 hover:text-accent mr-4"><i class="fas fa-qrcode"></i></button>
-                                                <button onclick="App.openModal('${inv.id}')" class="text-white/40 hover:text-white"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                    `}).join('')}
+                                        return `<tr><td class="p-6 font-bold">${inv.groupName}</td><td class="p-6 font-mono text-accent">${inv.inviteCode}</td><td class="p-6 text-[10px]">A:${counts.accepted} D:${counts.declined} P:${counts.pending}</td><td class="p-6"><button onclick="App.showQR('${inv.id}')" class="mr-4 opacity-50 hover:opacity-100"><i class="fas fa-qrcode"></i></button><button onclick="App.openModal('${inv.id}')" class="opacity-50 hover:opacity-100"><i class="fas fa-edit"></i></button></td></tr>`
+                                    }).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -519,26 +467,9 @@
                 setTimeout(() => {
                     const ctx = document.getElementById('adminChart');
                     if (!ctx) return;
-                    let y = 0, n = 0, p = 0;
-                    this.state.invitations.forEach(i => Object.values(i.responses || {}).forEach(r => {
-                        if (r === 'accepted') y++; else if (r === 'declined') n++; else p++;
-                    }));
-                    new Chart(ctx, {
-                        type: 'doughnut',
-                        data: { 
-                            labels: ['Confirmed', 'Declined', 'Pending'], 
-                            datasets: [{ 
-                                data: [y, n, p], 
-                                backgroundColor: ['#38bdf8', '#ef4444', 'rgba(255,255,255,0.05)'], 
-                                borderWidth: 0
-                            }] 
-                        },
-                        options: { 
-                            maintainAspectRatio: false, 
-                            cutout: '85%', 
-                            plugins: { legend: { display: false } } 
-                        }
-                    });
+                    let y=0, n=0, p=0;
+                    this.state.invitations.forEach(i => Object.values(i.responses||{}).forEach(r => { if(r==='accepted')y++; else if(r==='declined')n++; else p++; }));
+                    new Chart(ctx, { type:'doughnut', data:{ labels:['Yes','No','?'], datasets:[{ data:[y,n,p], backgroundColor:['#38bdf8','#ef4444','rgba(255,255,255,0.1)'], borderWidth:0 }] }, options:{ maintainAspectRatio:false, cutout:'85%', plugins:{ legend:{ display:false } } } });
                 }, 100);
             }
         };
