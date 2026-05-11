@@ -260,8 +260,13 @@
 
                 const id = this.state.editingId || Date.now().toString();
                 const existing = this.state.invitations.find(i => i.id === id);
-                const responses = existing ? { ...existing.responses } : {};
-                names.forEach(n => { if(!responses[n]) responses[n] = 'Pending'; });
+                
+                // FIXED: Create a fresh responses object based ONLY on the current names provided in the textarea
+                const responses = {};
+                names.forEach(n => {
+                    // Retain existing status if name is still present, otherwise default to Pending
+                    responses[n] = (existing && existing.responses && existing.responses[n]) ? existing.responses[n] : 'Pending';
+                });
 
                 const data = { groupName, inviteCode, invitedNames: names, responses, updatedAt: Date.now() };
 
