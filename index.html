@@ -661,4 +661,21 @@
         window.onload = () => App.init();
     </script>
 </body>
+    <footer>
+        <audio id="bg-music" src="handa-na-noah-raquel.mp3" loop></audio>
+        <script>
+          const music = document.getElementById('bg-music');
+          const btn = document.getElementById('music-btn');
+
+          function toggleMusic() {
+            if (music.paused) {
+              music.play();
+              btn.innerText = "⏸️ Pause Music";
+            } else {
+              music.pause();
+              btn.innerText = "🎵 Play Music";
+            }
+          }
+        </script>
+    </footer>
 </html>
