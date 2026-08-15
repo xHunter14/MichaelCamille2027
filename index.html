@@ -662,15 +662,36 @@
     </script>
 </body>
     <footer>
-        <audio id="bg-music" src="handa-na-noah-raquel.mp3" loop></audio>
+        <!-- Place this inside your <footer> tag -->
+        <div class="footer-music-controls" style="text-align: center; padding: 10px;">
+          <!-- Added controls attribute temporarily to help you test if the file loads -->
+          <audio id="bg-music" src="handa-na-noah-raquel.mp3" loop controls></audio>
+  
+          <div style="margin-top: 5px;">
+            <button onclick="toggleMusic()" id="music-btn" style="padding: 6px 12px; cursor: pointer;">
+              🎵 Play Music
+            </button>
+          </div>
+        </div>
+
         <script>
           const music = document.getElementById('bg-music');
           const btn = document.getElementById('music-btn');
 
+          // Set default volume to 30% so it's pleasant background music
+          music.volume = 0.3;
+
           function toggleMusic() {
             if (music.paused) {
-              music.play();
-              btn.innerText = "⏸️ Pause Music";
+              music.play()
+                .then(() => {
+                  btn.innerText = "⏸️ Pause Music";
+                  console.log("Audio started playing successfully.");
+                })
+                .catch((error) => {
+                  console.error("Playback failed. Reason:", error);
+                  alert("Could not play audio. Please ensure your file path is correct.");
+                });
             } else {
               music.pause();
               btn.innerText = "🎵 Play Music";
