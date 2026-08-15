@@ -661,42 +661,59 @@
         window.onload = () => App.init();
     </script>
 </body>
-    <footer>
-        <!-- Place this inside your <footer> tag -->
-        <div class="footer-music-controls" style="text-align: center; padding: 10px;">
-          <!-- Added controls attribute temporarily to help you test if the file loads -->
-          <audio id="bg-music" src="handa-na-noah-raquel.mp3" loop controls></audio>
+    <!-- Centered Footer Container with Blue Background -->
+<footer class="w-full bg-blue-600 py-6 px-4 flex flex-col items-center justify-center text-center text-white border-t border-white/20">
   
-          <div style="margin-top: 5px;">
-            <button onclick="toggleMusic()" id="music-btn" style="padding: 6px 12px; cursor: pointer;">
-              🎵 Play Music
-            </button>
-          </div>
-        </div>
+  <!-- Hidden Audio Element -->
+  <audio id="bg-music" src="handa-na-noah-raquel.mp3" loop></audio>
+  
+  <p class="text-sm font-medium mb-2">Enjoying the site? Background music is active!</p>
+  
+  <!-- Sleek Custom Button Matching Your Palette -->
+  <button 
+    onclick="toggleMusic()" 
+    id="music-btn" 
+    class="flex items-center gap-2 px-4 py-2 bg-blue-800 hover:bg-blue-900 active:scale-95 transition-all text-sm font-semibold rounded-full border border-white/20 shadow-md"
+  >
+    <span>🎵</span> <span id="btn-text">Play Music</span>
+  </button>
 
-        <script>
-          const music = document.getElementById('bg-music');
-          const btn = document.getElementById('music-btn');
+</footer>
 
-          // Set default volume to 30% so it's pleasant background music
-          music.volume = 0.3;
+<script>
+  const music = document.getElementById('bg-music');
+  const btnText = document.getElementById('btn-text');
 
-          function toggleMusic() {
-            if (music.paused) {
-              music.play()
-                .then(() => {
-                  btn.innerText = "⏸️ Pause Music";
-                  console.log("Audio started playing successfully.");
-                })
-                .catch((error) => {
-                  console.error("Playback failed. Reason:", error);
-                  alert("Could not play audio. Please ensure your file path is correct.");
-                });
-            } else {
-              music.pause();
-              btn.innerText = "🎵 Play Music";
-            }
-          }
-        </script>
-    </footer>
+  // Low volume for background ambiance
+  music.volume = 0.25;
+
+  // Function to toggle play/pause manually
+  function toggleMusic() {
+    if (music.paused) {
+      playAudio();
+    } else {
+      pauseAudio();
+    }
+  }
+
+  function playAudio() {
+    music.play()
+      .then(() => {
+        btnText.innerText = "Pause Music";
+      })
+      .catch(err => console.log("Autoplay blocked, waiting for user interaction."));
+  }
+
+  function pauseAudio() {
+    music.pause();
+    btnText.innerText = "Play Music";
+  }
+
+  // CRITICAL WORKAROUND: Triggers playback on the user's very first click anywhere on the page
+  window.addEventListener('click', () => {
+    if (music.paused && !music.dataset.manuallyPaused) {
+      playAudio();
+    }
+  }, { once: true }); // Runs only once so it doesn't interrupt later clicks
+</script>
 </html>
