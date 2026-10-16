@@ -580,7 +580,7 @@
                                                         </svg>
                                                     </div>
                                                     <div class="md:w-1/2 pl-20 md:pl-12 order-2 md:order-3">
-                                                        <h3 class="font-serif text-xl text-white font-bold tracking-wide">RECEPTION</h3>
+                                                        <h3 class="font-serif text-xl text-white font-bold tracking-wide">RECEPTION STARS</h3>
                                                         <p class="text-xs text-gray-300 mt-1 leading-relaxed">Dinner, program, toasts, and grand entrance at La Roca Veranda.</p>
                                                         <span class="inline-block mt-2 text-accent font-mono text-sm font-bold bg-accent/10 px-3 py-1 rounded-full border border-accent/20">3:30 PM</span>
                                                     </div>
@@ -702,6 +702,26 @@
                                         </div>
                                     </div>
 
+                                    <!-- SEPARATED SECTION 4: GIFT GUIDE -->
+                                    <div class="details-card rounded-[3rem] p-8 md:p-10 text-left shadow-2xl mb-20">
+                                        <div class="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">
+                                            <span class="text-accent text-xl">🎁</span>
+                                            <div>
+                                                <h4 class="text-[9px] uppercase tracking-[0.3em] text-accent font-bold">Gift Guide</h4>
+                                                <h3 class="font-serif text-2xl md:text-3xl text-white">GIFT</h3>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="grid gap-8 items-center">
+                                            <div>
+                                                <p class="text-xs text-gray-300 leading-relaxed">Your love, laugther, and presence on our wedding day are the greatest gifts of all. If you would like to contribute to out future together, a cash gift would be deeply cherished.</p>
+                                                <h3 class="font-serif text-2xl text-accent mb-2">Here is our QR Code</h3></div>
+                                            <div class="aspect-16/9 rounded-3xl overflow-hidden shadow-xl border border-white/10">
+                                                <img src="Photo/InstaPay.jpg" class="w-full h-full object-cover" alt="InstaPay">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         </section>
@@ -716,7 +736,8 @@
                                 <h2 class="font-serif text-4xl mb-4">${inv.groupName}</h2>
                                 <p class="text-gray-400 text-sm mb-10 italic">Please confirm the attendance for each guest in your group.</p>
                                 <p class="text-gray-400 text-sm mb-10 italic">This is an INTIMATE WEDDING. We ask to you to refrain from spreading our invitation, only the people closest to us will be in attendance to our wedding.</p>
-                                <p class="text-gray-400 text-sm mb-10 italic">Can I bring Plus One on this wedding? We are keeping our guest list intimate to celebrate with our closest loved ones. Because of this, we connot offer plus-one, unless listed on the invitation, so NO.</p>
+                                <p class="text-gray-400 text-sm mb-10 italic">Can I bring Plus One on this wedding? We are keeping our guest list intimate to celebrate with our closest loved ones.</p>
+                                <p class="text-gray-400 text-sm mb-10 italic">We invite you to be fully present with us celebrating the Sacrament of Holy Matrimony. Please refrain from using phones and cameras until we are declared husband and wife.</p>
                                 <div class="space-y-4 text-left">
                                     ${inv.invitedNames.map(n => {
                                         const status = (inv.responses && inv.responses[n]) || 'Pending';
