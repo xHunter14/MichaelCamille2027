@@ -3,20 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive BINGO Generator & Draw Machine</title>
-  <!-- Google Fonts for BINGO Card Styling -->
+  <title>Professional Bingo Card Generator & Draw Machine</title>
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;600;800&family=Playfair+Display:wght@700&family=Press+Start+2P&family=Permanent+Marker&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&family=Permanent+Marker&family=Press+Start+2P&display=swap" rel="stylesheet">
   
   <style>
-    /* Global Reset & Styling */
     :root {
-      --primary-color: #4f46e5;
+      --primary: #4f46e5;
       --primary-hover: #4338ca;
-      --bg-color: #f3f4f6;
+      --primary-light: #e0e7ff;
+      --bg-app: #f8fafc;
       --card-bg: #ffffff;
-      --text-color: #1f2937;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #cbd5e1;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     }
 
     * {
@@ -27,39 +33,74 @@
 
     body {
       font-family: 'Inter', sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      padding: 20px;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 24px;
     }
 
-    .app-container {
-      max-width: 1200px;
+    .app-wrapper {
+      max-width: 1300px;
       margin: 0 auto;
     }
 
-    /* Tabs Navigation */
+    /* App Header */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      background: white;
+      padding: 20px 28px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid #e2e8f0;
+    }
+
+    .app-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-title span {
+      background: linear-gradient(135deg, var(--primary), #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Navigation Tabs */
     .nav-tabs {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #e5e7eb;
-      padding-bottom: 10px;
+      gap: 8px;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: 12px;
     }
 
     .tab-btn {
       padding: 10px 20px;
       font-weight: 600;
+      font-size: 0.9rem;
       border: none;
-      background: #e5e7eb;
-      color: #374151;
+      background: transparent;
+      color: var(--text-muted);
       border-radius: 8px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--primary);
     }
 
     .tab-btn.active {
-      background: var(--primary-color);
-      color: white;
+      background: white;
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
     }
 
     .tab-content {
@@ -71,94 +112,171 @@
     }
 
     /* Generator Layout */
-    .generator-grid {
+    .generator-layout {
       display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 20px;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
     }
 
-    @media (max-width: 900px) {
-      .generator-grid {
+    @media (max-width: 1024px) {
+      .generator-layout {
         grid-template-columns: 1fr;
       }
     }
 
-    .panel {
+    .card-panel {
       background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      border: 1px solid #e2e8f0;
+      padding: 24px;
     }
 
-    .panel-title {
-      font-size: 1.25rem;
+    .panel-heading {
+      font-size: 1.1rem;
       font-weight: 700;
-      margin-bottom: 15px;
-      color: #111827;
-      border-bottom: 1px solid #f3f4f6;
-      padding-bottom: 8px;
+      color: #0f172a;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    .form-group {
-      margin-bottom: 12px;
+    /* Form Controls */
+    .control-group {
+      margin-bottom: 16px;
     }
 
-    .form-group label {
+    .control-group label {
       display: block;
       font-size: 0.85rem;
       font-weight: 600;
-      margin-bottom: 4px;
-      color: #4b5563;
+      margin-bottom: 6px;
+      color: #334155;
     }
 
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 0.9rem;
-    }
-
-    .form-row {
+    .control-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .form-row .form-group {
+    .control-row .control-group {
       flex: 1;
     }
 
-    .btn {
+    input[type="text"], input[type="number"], select, textarea {
       width: 100%;
-      padding: 12px;
-      background: var(--primary-color);
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      background-color: #f8fafc;
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background-color: white;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    input[type="color"] {
+      -webkit-appearance: none;
+      border: 1px solid var(--border-color);
+      width: 100%;
+      height: 42px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      background: #f8fafc;
+      padding: 4px;
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 6px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      height: 6px;
+    }
+
+    .file-upload-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .file-upload-wrapper input[type="file"] {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 8px;
+      background: #f8fafc;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       font-weight: 700;
+      font-size: 1rem;
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      transition: all 0.2s ease;
       margin-top: 10px;
-      transition: background 0.2s;
     }
 
-    .btn:hover {
+    .btn-primary:hover {
       background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
     }
 
-    /* Single Card Display Structure */
+    /* Live Preview Column */
+    .preview-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f1f5f9;
+      border-radius: var(--radius-lg);
+      padding: 40px 20px;
+      border: 2px dashed #cbd5e1;
+      min-height: 550px;
+    }
+
+    /* Gorgeous Bingo Card Styling */
     .bingo-card {
       position: relative;
       width: 100%;
-      aspect-ratio: 1 / 1.2;
+      max-width: 460px;
+      aspect-ratio: 1 / 1.25;
       background-size: cover;
       background-position: center;
-      border-radius: 8px;
+      border-radius: 16px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      padding: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      padding: 20px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
       background-color: #ffffff;
+      border: 4px solid #ffffff;
     }
 
     .card-overlay {
@@ -181,26 +299,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
     .card-header img {
-      max-height: 40px;
+      max-height: 44px;
       object-fit: contain;
     }
 
     .card-header-title {
-      font-size: 1.8rem;
+      font-size: 2.2rem;
       font-weight: 800;
       text-align: center;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .grid-container {
       display: grid;
       flex: 1;
-      gap: 4px;
+      gap: 6px;
       width: 100%;
     }
 
@@ -209,50 +328,55 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.92);
       border-style: solid;
+      border-radius: 8px;
       word-break: break-word;
       hyphens: auto;
-      padding: 2px;
+      padding: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+      transition: transform 0.1s;
     }
 
     .card-footer {
       text-align: center;
-      font-size: 0.75rem;
-      margin-top: 8px;
+      font-size: 0.8rem;
+      margin-top: 12px;
       font-weight: 600;
+      letter-spacing: 0.5px;
     }
 
     /* Print Screen Layout */
-    .print-controls {
+    .print-toolbar {
       display: flex;
-      gap: 15px;
+      gap: 16px;
       align-items: center;
       background: white;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      padding: 16px 24px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid #e2e8f0;
     }
 
     #printContainer {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 30px;
     }
 
     .print-page {
       background: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
       display: grid;
-      gap: 15px;
-      padding: 20px;
+      gap: 20px;
+      padding: 24px;
       box-sizing: border-box;
       margin: 0 auto;
+      border-radius: 8px;
     }
 
-    /* Page Sizes for Preview */
     .print-page.letter {
       width: 8.5in;
       min-height: 11in;
@@ -263,62 +387,85 @@
       min-height: 297mm;
     }
 
-    /* Cards per page layout grids */
     .print-page.layout-1 {
       grid-template-columns: 1fr;
       align-content: center;
+      justify-items: center;
     }
 
     .print-page.layout-2 {
       grid-template-columns: 1fr;
       grid-template-rows: 1fr 1fr;
+      justify-items: center;
     }
 
     .print-page.layout-4 {
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 1fr;
+      justify-items: center;
     }
 
-    /* Bingo Draw Machine Styling */
-    .draw-container {
+    .print-page.layout-1 .bingo-card {
+      max-width: 580px;
+    }
+
+    .print-page.layout-2 .bingo-card {
+      max-width: 480px;
+      max-height: 480px;
+    }
+
+    .print-page.layout-4 .bingo-card {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    /* Bingo Draw Machine */
+    .draw-layout {
       display: grid;
-      grid-template-columns: 350px 1fr;
-      gap: 20px;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
     }
 
-    .tumbler-box {
+    @media (max-width: 900px) {
+      .draw-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .tumbler-panel {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #1e293b;
-      color: white;
-      border-radius: 12px;
-      padding: 30px;
-      text-align: center;
     }
 
     .ball-display {
-      width: 140px;
-      height: 140px;
+      width: 160px;
+      height: 160px;
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #ffffff, #e2e8f0 40%, #94a3b8 100%);
+      background: radial-gradient(circle at 35% 35%, #ffffff, #e2e8f0 40%, #64748b 100%);
       color: #0f172a;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2rem;
+      font-size: 2.5rem;
       font-weight: 800;
-      margin: 20px 0;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      transition: transform 0.3s ease;
+      margin: 24px 0;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 5px 15px rgba(255,255,255,0.8);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .ball-display.animate {
-      animation: drawZoom 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      animation: ballZoom 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    @keyframes drawZoom {
+    @keyframes ballZoom {
       0% { transform: scale(0.2) rotate(-180deg); opacity: 0; }
       80% { transform: scale(1.15) rotate(10deg); opacity: 1; }
       100% { transform: scale(1) rotate(0deg); }
@@ -327,10 +474,12 @@
     .master-board {
       display: grid;
       grid-template-columns: repeat(15, 1fr);
-      gap: 6px;
+      gap: 8px;
       background: white;
-      padding: 20px;
-      border-radius: 12px;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      border: 1px solid #e2e8f0;
     }
 
     .board-cell {
@@ -338,20 +487,24 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f1f5f9;
-      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
       font-weight: 700;
       font-size: 0.85rem;
       color: #94a3b8;
+      transition: all 0.2s;
     }
 
     .board-cell.drawn {
-      background: var(--primary-color);
+      background: var(--primary);
       color: white;
-      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.4);
+      border-color: var(--primary);
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);
+      transform: scale(1.05);
     }
 
-    /* Print Rules Fix */
+    /* Print Media Rules */
     @media print {
       body {
         background: none !important;
@@ -359,7 +512,7 @@
         margin: 0 !important;
       }
 
-      .no-print, .nav-tabs, .print-controls, .tab-content:not(#print-tab) {
+      .no-print, .app-header, .print-toolbar, .tab-content:not(#print-tab) {
         display: none !important;
       }
 
@@ -377,14 +530,10 @@
         padding: 0.2in !important;
         margin: 0 !important;
         width: 100% !important;
-        height: 100vh !important;
+        min-height: 100vh !important;
         page-break-after: always;
         break-after: page;
         box-sizing: border-box !important;
-      }
-
-      .print-page.layout-1 .bingo-card {
-        height: 90vh !important;
       }
 
       @page {
@@ -395,22 +544,29 @@
 </head>
 <body>
 
-<div class="app-container">
-  <!-- Top Navigation Tabs -->
-  <div class="nav-tabs no-print">
-    <button class="tab-btn active" onclick="switchTab('generator')">1. Card Designer</button>
-    <button class="tab-btn" onclick="switchTab('print')">2. Print Layout & Preview</button>
-    <button class="tab-btn" onclick="switchTab('draw')">3. BINGO Caller / Draw</button>
-  </div>
+<div class="app-wrapper">
+  <!-- Top Application Header -->
+  <header class="app-header no-print">
+    <div class="app-title">
+      🎰 <span>BingoCraft Pro</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('generator')">1. Card Designer</button>
+      <button class="tab-btn" onclick="switchTab('print')">2. Print Layout & PDF</button>
+      <button class="tab-btn" onclick="switchTab('draw')">3. BINGO Caller</button>
+    </div>
+  </header>
 
-  <!-- TAB 1: CARD GENERATOR & DESIGNER -->
+  <!-- TAB 1: CARD DESIGNER & GENERATOR -->
   <div id="generator-tab" class="tab-content active">
-    <div class="generator-grid">
-      <!-- Controls Column -->
-      <div class="panel">
-        <h2 class="panel-title">Customization</h2>
+    <div class="generator-layout">
+      <!-- Customization Panel -->
+      <div class="card-panel no-print">
+        <div class="panel-heading">
+          <span>Card Customization</span>
+        </div>
         
-        <div class="form-group">
+        <div class="control-group">
           <label>Bingo Mode</label>
           <select id="bingoType" onchange="updateDesign()">
             <option value="number">Number BINGO</option>
@@ -418,13 +574,13 @@
           </select>
         </div>
 
-        <div id="textBingoGroup" class="form-group" style="display:none;">
+        <div id="textBingoGroup" class="control-group" style="display:none;">
           <label>Custom Word List (Comma Separated)</label>
-          <textarea id="customWords" rows="3" placeholder="Apple, Banana, Cherry, Date, Fig, Grape..." oninput="updateDesign()"></textarea>
+          <textarea id="customWords" rows="3" placeholder="Apple, Banana, Cherry, Date, Fig, Grape..." oninput="updateDesign()">Apple, Banana, Cherry, Date, Elderberry, Fig, Grape, Honeydew, Kiwi, Lemon, Mango, Nectarine, Orange, Papaya, Quince, Raspberry, Strawberry, Tangerine, Ugli, Vanilla, Watermelon, Xigua, Yam, Zucchini</textarea>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
+        <div class="control-row">
+          <div class="control-group">
             <label>Grid Size</label>
             <select id="gridSize" onchange="updateDesign()">
               <option value="3">3 x 3</option>
@@ -432,7 +588,7 @@
               <option value="5" selected>5 x 5</option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="control-group">
             <label>FREE Slot</label>
             <select id="hasFreeSlot" onchange="updateDesign()">
               <option value="true" selected>Yes (Center)</option>
@@ -441,18 +597,20 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="control-group">
           <label>Header Title</label>
           <input type="text" id="headerText" value="BINGO" oninput="updateDesign()">
         </div>
 
-        <div class="form-group">
+        <div class="control-group">
           <label>Header Logo (Optional)</label>
-          <input type="file" id="logoUpload" accept="image/*" onchange="handleLogoUpload(event)">
+          <div class="file-upload-wrapper">
+            <input type="file" id="logoUpload" accept="image/*" onchange="handleLogoUpload(event)">
+          </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
+        <div class="control-row">
+          <div class="control-group">
             <label>Font Family</label>
             <select id="fontFamily" onchange="updateDesign()">
               <option value="'Fredoka', sans-serif">Fredoka (Rounded)</option>
@@ -462,22 +620,22 @@
               <option value="'Press Start 2P', monospace">Arcade Pixel</option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="control-group">
             <label>Cell Text Size</label>
             <select id="textSize" onchange="updateDesign()">
-              <option value="0.9rem">Small</option>
-              <option value="1.2rem" selected>Medium</option>
-              <option value="1.6rem">Large</option>
+              <option value="0.85rem">Small</option>
+              <option value="1.15rem" selected>Medium</option>
+              <option value="1.5rem">Large</option>
             </select>
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Border Color</label>
+        <div class="control-row">
+          <div class="control-group">
+            <label>Cell Border Color</label>
             <input type="color" id="borderColor" value="#4f46e5" onchange="updateDesign()">
           </div>
-          <div class="form-group">
+          <div class="control-group">
             <label>Border Thickness</label>
             <select id="borderThickness" onchange="updateDesign()">
               <option value="1px">1px</option>
@@ -487,79 +645,85 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
+        <div class="control-row">
+          <div class="control-group">
             <label>Background Color</label>
             <input type="color" id="bgColor" value="#ffffff" onchange="updateDesign()">
           </div>
-          <div class="form-group">
+          <div class="control-group">
             <label>Overlay Opacity</label>
             <input type="range" id="overlayOpacity" min="0" max="1" step="0.1" value="0.1" oninput="updateDesign()">
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="control-group">
           <label>Background Image (Optional)</label>
-          <input type="file" id="bgUpload" accept="image/*" onchange="handleBgUpload(event)">
+          <div class="file-upload-wrapper">
+            <input type="file" id="bgUpload" accept="image/*" onchange="handleBgUpload(event)">
+          </div>
         </div>
 
-        <div class="form-group">
+        <div class="control-group">
           <label>Footer Text</label>
-          <input type="text" id="footerText" value="Thank you for playing!" oninput="updateDesign()">
+          <input type="text" id="footerText" value="Good Luck & Have Fun!" oninput="updateDesign()">
         </div>
 
-        <div class="form-group">
+        <div class="control-group">
           <label>Cards Quantity to Generate (Max 1,000)</label>
           <input type="number" id="cardQuantity" value="10" min="1" max="1000">
         </div>
 
-        <button class="btn" onclick="generateCardsAndProceed()">Generate Cards & View Layout</button>
+        <button class="btn-primary" onclick="generateCardsAndProceed()">Generate Cards & View Layout</button>
       </div>
 
-      <!-- Single Live Preview Column -->
-      <div class="panel">
-        <h2 class="panel-title">Card Live Preview</h2>
-        <div id="singleCardPreviewContainer"></div>
+      <!-- Live Preview Column -->
+      <div class="preview-stage">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Live Card Preview</div>
+        <div id="singleCardPreviewContainer" style="width: 100%; display: flex; justify-content: center;"></div>
       </div>
     </div>
   </div>
 
   <!-- TAB 2: PRINT LAYOUT & PREVIEW -->
   <div id="print-tab" class="tab-content">
-    <div class="print-controls no-print">
+    <div class="print-toolbar no-print">
       <div>
-        <label>Paper Size: </label>
+        <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; display: block;">Paper Size</label>
         <select id="paperSize" onchange="renderPrintLayout()">
           <option value="letter">US Letter (8.5" x 11")</option>
           <option value="a4">A4 (210mm x 297mm)</option>
         </select>
       </div>
       <div>
-        <label>Cards Per Page: </label>
+        <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; display: block;">Cards Per Page</label>
         <select id="cardsPerPage" onchange="renderPrintLayout()">
           <option value="1">1 Card</option>
           <option value="2">2 Cards</option>
           <option value="4" selected>4 Cards</option>
         </select>
       </div>
-      <button class="btn" style="width:auto; padding: 8px 16px; margin:0;" onclick="window.print()">Print / Save PDF</button>
+      <div style="margin-left: auto;">
+        <button class="btn-primary" style="margin:0; padding: 10px 24px;" onclick="window.print()">🖨️ Print / Save PDF</button>
+      </div>
     </div>
 
-    <!-- Print Container where pages will be dynamically constructed -->
+    <!-- Print Container -->
     <div id="printContainer"></div>
   </div>
 
   <!-- TAB 3: BINGO CALLER / DRAW -->
   <div id="draw-tab" class="tab-content">
-    <div class="draw-container">
-      <div class="tumbler-box">
-        <h3>BINGO CALLER</h3>
+    <div class="draw-layout">
+      <div class="tumbler-panel">
+        <h2 style="font-size: 1.25rem; font-weight: 700; letter-spacing: 1px;">BINGO CALLER MACHINE</h2>
         <div class="ball-display" id="ballDisplay">--</div>
-        <button class="btn" onclick="drawNextBall()">DRAW NEXT</button>
-        <button class="btn" style="background:#ef4444; margin-top:8px;" onclick="resetDraw()">Reset Game</button>
+        <button class="btn-primary" style="margin-bottom: 10px;" onclick="drawNextBall()">🎲 DRAW NEXT BALL</button>
+        <button class="btn-primary" style="background:#ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);" onclick="resetDraw()">🔄 Reset Game</button>
       </div>
-      <div class="panel">
-        <h2 class="panel-title">Master Board</h2>
+      <div class="card-panel">
+        <div class="panel-heading">
+          <span>Master Call Board</span>
+        </div>
         <div class="master-board" id="masterBoard"></div>
       </div>
     </div>
@@ -567,14 +731,12 @@
 </div>
 
 <script>
-  // App State Storage
   let generatedCardsData = [];
   let logoImageData = null;
   let bgImageData = null;
   let drawnNumbers = [];
   let availablePool = [];
 
-  // Initialize Default Single Preview
   window.onload = function() {
     updateDesign();
     initMasterBoard();
@@ -653,14 +815,12 @@
     container.appendChild(renderBingoCardDOM(sampleCardData, config));
   }
 
-  // Generate matrix data for cards
   function createCardValues(config) {
     const size = config.gridSize;
     const totalCells = size * size;
     let cardMatrix = [];
 
     if (config.type === 'number') {
-      // Standard 75-ball distribution for 5x5, dynamic for others
       for (let col = 0; col < size; col++) {
         let min = col * 15 + 1;
         let max = min + 14;
@@ -675,12 +835,10 @@
         }
       }
     } else {
-      // Word Bingo
       let wordPool = [...config.words];
       while (wordPool.length < totalCells) {
         wordPool = wordPool.concat(config.words.length > 0 ? config.words : ["BINGO"]);
       }
-      // Shuffle
       wordPool.sort(() => Math.random() - 0.5);
       
       let idx = 0;
@@ -692,7 +850,6 @@
       }
     }
 
-    // Insert FREE slot
     if (config.hasFreeSlot) {
       const center = Math.floor(size / 2);
       cardMatrix[center][center] = "FREE";
@@ -701,7 +858,6 @@
     return cardMatrix;
   }
 
-  // Render Card DOM Element
   function renderBingoCardDOM(matrix, config) {
     const cardEl = document.createElement('div');
     cardEl.className = 'bingo-card';
@@ -718,7 +874,6 @@
     const content = document.createElement('div');
     content.className = 'card-content';
 
-    // Header
     const header = document.createElement('div');
     header.className = 'card-header';
     if (logoImageData) {
@@ -733,7 +888,6 @@
     header.appendChild(title);
     content.appendChild(header);
 
-    // Grid Container
     const grid = document.createElement('div');
     grid.className = 'grid-container';
     grid.style.gridTemplateColumns = `repeat(${config.gridSize}, 1fr)`;
@@ -751,7 +905,8 @@
 
         if (matrix[r][c] === 'FREE') {
           cell.style.fontWeight = 'bold';
-          cell.style.background = 'rgba(238, 242, 255, 0.9)';
+          cell.style.background = 'rgba(238, 242, 255, 0.95)';
+          cell.style.color = '#4f46e5';
         }
 
         grid.appendChild(cell);
@@ -759,7 +914,6 @@
     }
     content.appendChild(grid);
 
-    // Footer
     if (config.footerText) {
       const footer = document.createElement('div');
       footer.className = 'card-footer';
@@ -789,7 +943,6 @@
     }
   }
 
-  // Print Layout Engine
   function renderPrintLayout() {
     const printContainer = document.getElementById('printContainer');
     printContainer.innerHTML = '';
@@ -814,7 +967,6 @@
     });
   }
 
-  // BINGO Caller Logic
   function initMasterBoard() {
     const board = document.getElementById('masterBoard');
     board.innerHTML = '';
@@ -843,7 +995,7 @@
 
     const ballDisplay = document.getElementById('ballDisplay');
     ballDisplay.classList.remove('animate');
-    void ballDisplay.offsetWidth; // Trigger reflow for animation restart
+    void ballDisplay.offsetWidth;
     ballDisplay.innerText = drawnVal;
     ballDisplay.classList.add('animate');
 
