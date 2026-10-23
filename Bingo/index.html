@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo Studio Pro - Generator & Caller</title>
+    <title>Ultimate Bingo Studio & Caller Machine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- JSZip & FileSaver for downloading cards as ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&family=Press+Start+2P&family=Permanent+Marker&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .font-fredoka { font-family: 'Fredoka', sans-serif; }
         .font-playfair { font-family: 'Playfair Display', serif; }
         .font-arcade { font-family: 'Press Start 2P', monospace; }
-        .font-marker { font-family: 'Permanent Marker', cursive; }
+        .font-marker { font-family: 'Permanent+Marker', cursive; }
         .font-mono { font-family: 'Roboto Mono', monospace; }
 
         @keyframes bounce-ball {
@@ -33,45 +35,59 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Print Styles */
+        /* Print Page - Exactly 1 card per printable sheet */
         .print-page {
             box-sizing: border-box;
+            background: #ffffff !important;
+            color: #0f172a !important;
             page-break-after: always;
             break-after: page;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
+        /* Standard Print Rules */
         @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
             body * { visibility: hidden; }
             #print-container, #print-container * { visibility: visible; }
-            #print-container { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            #print-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+            }
             .no-print { display: none !important; }
             
             @page { 
-                size: letter portrait; 
-                margin: 5mm; 
+                size: auto; 
+                margin: 0; 
             }
 
             .print-page {
-                box-sizing: border-box;
-                height: 100vh;
-                max-height: 270mm;
-                page-break-after: always;
-                break-after: page;
-                page-break-inside: avoid;
-                break-inside: avoid;
-                margin: 0 auto !important;
-                box-shadow: none !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                padding: 10mm !important;
+                margin: 0 !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                background: #ffffff !important;
                 border: none !important;
-                background: white !important;
+                box-shadow: none !important;
             }
 
-            .card-print-item {
-                page-break-inside: avoid;
-                break-inside: avoid;
-                height: 410px !important; /* Compact height so 2 or 4 cards fit safely */
-            }
-
-            /* Force browsers to print background images and colors */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -82,7 +98,7 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
     <!-- Top Navigation Bar -->
-    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md">
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
@@ -102,7 +118,7 @@
                 </button>
                 <button onclick="switchTab('viewer')" id="nav-viewer" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-800">
                     <i data-lucide="printer" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">Print & Save PDF</span>
+                    <span class="hidden md:inline">Cards Viewer & Print</span>
                     <span id="card-badge" class="ml-1 px-1.5 py-0.5 text-[10px] bg-slate-700 rounded-full text-slate-300">0</span>
                 </button>
                 <button onclick="switchTab('caller')" id="nav-caller" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-800">
@@ -156,7 +172,7 @@
                                 <span>Word Pool (Comma separated or per line)</span>
                                 <span id="word-count-badge" class="text-indigo-400">0 words</span>
                             </label>
-                            <textarea id="word-pool-input" rows="3" placeholder="Apple, Banana, Cherry, Date..." oninput="updateWordPool()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-y"></textarea>
+                            <textarea id="word-pool-input" rows="3" placeholder="Apple, Banana, Cherry, Date, Elderberry..." oninput="updateWordPool()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-y"></textarea>
                         </div>
 
                         <!-- FREE Slot & Footer Toggles -->
@@ -186,7 +202,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-slate-300 mb-1">Footer Text / Event Name</label>
-                                <input type="text" id="footer-text" value="Annual Bingo Event 2026" oninput="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <input type="text" id="footer-text" value="Michael & Camille 2027" oninput="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                             </div>
                         </div>
 
@@ -249,7 +265,7 @@
                             </div>
                         </div>
 
-                        <!-- Quantity -->
+                        <!-- Bulk Generation Quantity -->
                         <div class="pt-4 border-t border-slate-700 space-y-4">
                             <div class="flex items-center justify-between">
                                 <label class="block text-xs font-medium text-slate-300">Cards to Generate (Max 1,000)</label>
@@ -280,16 +296,17 @@
                             </div>
                         </div>
 
-                        <!-- Live Card Render Frame -->
+                        <!-- Interactive Live Card Render Frame -->
                         <div class="flex justify-center overflow-auto p-4 bg-slate-950/60 rounded-xl border border-slate-700/50 min-h-[480px] items-center">
                             <div id="live-card-preview" class="transition-all shadow-2xl rounded-2xl p-6 w-full max-w-[420px] relative overflow-hidden flex flex-col justify-between">
+                                <!-- Card content injected via JS -->
                             </div>
                         </div>
 
                         <div class="flex justify-end">
                             <button onclick="switchTab('viewer')" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-xl transition flex items-center space-x-2">
                                 <i data-lucide="printer" class="w-4 h-4"></i>
-                                <span>Proceed to Print & Export Layouts</span>
+                                <span>Proceed to Export / Print</span>
                             </button>
                         </div>
                     </div>
@@ -298,42 +315,31 @@
             </div>
         </section>
 
-        <!-- TAB 2: CARDS VIEWER & PRINT/EXPORT LAYOUT -->
+        <!-- TAB 2: CARDS VIEWER & EXPORT -->
         <section id="tab-viewer" class="space-y-6 hidden">
             <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-700 pb-4">
                     <div>
                         <h2 class="font-fredoka text-xl font-semibold text-indigo-300">Generated Bingo Cards (<span id="total-cards-count">0</span>)</h2>
-                        <p class="text-xs text-slate-400">Print directly or export generated sheets as PDF document</p>
+                        <p class="text-xs text-slate-400">Download cards as JPG images in a ZIP or print individually per page</p>
                     </div>
 
-                    <!-- Layout & Print/PDF Export Options -->
+                    <!-- Export Actions -->
                     <div class="flex flex-wrap items-center gap-3">
-                        <div>
-                            <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Cards per Page</label>
-                            <select id="print-layout" onchange="renderPrintPreview()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                                <option value="1">1 Card per Page (Large)</option>
-                                <option value="2" selected>2 Cards per Page</option>
-                                <option value="4">4 Cards per Page (Compact)</option>
-                            </select>
-                        </div>
-                        
-                        <!-- SEPARATE PRINT & SAVE PDF BUTTONS -->
-                        <div class="flex items-center space-x-2 mt-4 sm:mt-0">
-                            <button onclick="triggerPrint()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-lg shadow-indigo-600/30 flex items-center space-x-2 transition">
-                                <i data-lucide="printer" class="w-4 h-4"></i>
-                                <span>Print Cards</span>
-                            </button>
-                            <button onclick="exportToPDF()" id="export-pdf-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-600/30 flex items-center space-x-2 transition">
-                                <i data-lucide="download" class="w-4 h-4"></i>
-                                <span>Save as PDF</span>
-                            </button>
-                        </div>
+                        <button onclick="downloadCardsZIP()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-emerald-600/30 flex items-center space-x-2 transition">
+                            <i data-lucide="archive" class="w-4 h-4"></i>
+                            <span>Download as ZIP (.jpg)</span>
+                        </button>
+                        <button onclick="triggerPrint()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/30 flex items-center space-x-2 transition">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                            <span>Print Cards</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Print & PDF Export Container Area -->
-                <div id="print-container" class="space-y-8 bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                <!-- Print / Viewer Container (White Background) -->
+                <div id="print-container" class="space-y-8 bg-white p-6 rounded-2xl border border-slate-300 min-h-[400px]">
+                    <!-- Rendered high-res card images injected here -->
                 </div>
             </div>
         </section>
@@ -342,7 +348,7 @@
         <section id="tab-caller" class="space-y-6 hidden">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                <!-- Caller Controls & Display -->
+                <!-- Caller Controls & Tumbler -->
                 <div class="lg:col-span-5 space-y-6">
                     <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl text-center space-y-6">
                         <div class="flex items-center justify-between border-b border-slate-700 pb-4">
@@ -356,7 +362,7 @@
                             </button>
                         </div>
 
-                        <!-- Current Draw Sphere -->
+                        <!-- Current Ball / Word Display -->
                         <div class="relative py-8 flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-indigo-950/40 rounded-2xl border border-indigo-500/30 shadow-inner overflow-hidden">
                             <div class="absolute top-3 left-4 text-xs uppercase tracking-widest text-indigo-400 font-semibold">Latest Draw</div>
                             
@@ -368,7 +374,7 @@
                             <div class="mt-4 text-sm text-slate-300 font-medium" id="current-ball-subtitle">Click draw button below</div>
                         </div>
 
-                        <!-- Controls -->
+                        <!-- Draw Action Buttons -->
                         <div class="grid grid-cols-2 gap-4">
                             <button onclick="drawNextBall()" id="draw-btn" class="py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 transition transform active:scale-95">
                                 <i data-lucide="play" class="w-5 h-5"></i>
@@ -380,7 +386,7 @@
                             </button>
                         </div>
 
-                        <!-- Stats -->
+                        <!-- Stats & Progress -->
                         <div class="grid grid-cols-2 gap-4 pt-2 text-left">
                             <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
                                 <div class="text-[10px] text-slate-400 uppercase font-semibold">Drawn Count</div>
@@ -394,7 +400,7 @@
                     </div>
                 </div>
 
-                <!-- Drawn History & Master Board -->
+                <!-- Drawn History & Board Grid -->
                 <div class="lg:col-span-7 space-y-6">
                     <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-4">
                         <div class="flex items-center justify-between border-b border-slate-700 pb-4">
@@ -407,6 +413,7 @@
 
                         <!-- Master Grid Board -->
                         <div id="master-board-grid" class="grid gap-2 max-h-[450px] overflow-y-auto p-2">
+                            <!-- Dynamic grid generated via JS -->
                         </div>
                     </div>
                 </div>
@@ -416,9 +423,9 @@
 
     </main>
 
-    <!-- Zoom Ball Overlay Modal -->
+    <!-- Grand Zoom Ball Modal -->
     <div id="zoom-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-indigo-500/50 rounded-3xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl transform scale-95 transition-all duration-300">
+        <div class="bg-slate-900 border border-indigo-500/50 rounded-3xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl transform scale-95 transition-all duration-300" id="zoom-modal-card">
             <div class="w-32 h-32 mx-auto rounded-full bg-gradient-to-tr from-indigo-500 via-purple-600 to-pink-500 flex flex-col items-center justify-center shadow-2xl shadow-indigo-500/60 border-4 border-white/30 animate-bounce-ball">
                 <span id="modal-ball-prefix" class="text-xs font-bold uppercase tracking-wider text-white/90">BINGO</span>
                 <span id="modal-ball-text" class="font-fredoka text-4xl font-bold text-white">B-12</span>
@@ -433,7 +440,7 @@
         </div>
     </div>
 
-    <!-- Message Modal -->
+    <!-- Custom Notification Box -->
     <div id="msg-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
             <h3 id="msg-title" class="font-fredoka text-lg font-bold text-white">Notice</h3>
@@ -455,14 +462,14 @@
     </div>
 
     <script>
-        // Global Application State
+        // Global State
         let appState = {
             gameType: 'number',
             gridSize: 5,
             freeSlot: true,
             headerText: 'BINGO',
             logoUrl: null,
-            footerText: 'Annual Bingo Event 2026',
+            footerText: 'Michael & Camille 2027',
             showFooter: true,
             fontFamily: 'Fredoka',
             textSize: 'text-base',
@@ -483,14 +490,15 @@
             }
         };
 
-        // Initialize Lucide icons
+        let loadedBgImage = null;
+        let loadedLogoImage = null;
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             loadFromLocalStorage();
             initApp();
         });
 
-        // Helper: Standard Bingo Letter Mapping (1-75)
         function getBingoLetter(num) {
             if (num >= 1 && num <= 15) return 'B';
             if (num >= 16 && num <= 30) return 'I';
@@ -500,7 +508,6 @@
             return '';
         }
 
-        // Navigation Controller
         function switchTab(tabId) {
             ['generator', 'viewer', 'caller'].forEach(id => {
                 document.getElementById('tab-' + id).classList.add('hidden');
@@ -528,7 +535,7 @@
             document.getElementById('free-slot-toggle').checked = true;
             document.getElementById('footer-toggle').checked = true;
             document.getElementById('header-text').value = 'BINGO';
-            document.getElementById('footer-text').value = 'Annual Bingo Event 2026';
+            document.getElementById('footer-text').value = 'Michael & Camille 2027';
             document.getElementById('font-family').value = 'Fredoka';
             document.getElementById('text-size').value = 'text-base';
             document.getElementById('bg-color').value = '#ffffff';
@@ -540,12 +547,14 @@
             document.getElementById('card-quantity').value = 10;
             appState.logoUrl = null;
             appState.bgImage = null;
+            loadedBgImage = null;
+            loadedLogoImage = null;
             document.getElementById('remove-logo-btn').classList.add('hidden');
             document.getElementById('logo-file').value = '';
             document.getElementById('bg-image-file').value = '';
             updateBgImageStyle();
             triggerUpdate();
-            showMsg("Defaults Restored", "All settings have been reset to default values.");
+            showMsg("Defaults Restored", "All customization settings have been reset.");
         }
 
         function updateGameType() {
@@ -579,6 +588,8 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     appState.logoUrl = e.target.result;
+                    loadedLogoImage = new Image();
+                    loadedLogoImage.src = e.target.result;
                     document.getElementById('remove-logo-btn').classList.remove('hidden');
                     triggerUpdate();
                 };
@@ -588,6 +599,7 @@
 
         function removeLogo() {
             appState.logoUrl = null;
+            loadedLogoImage = null;
             document.getElementById('logo-file').value = '';
             document.getElementById('remove-logo-btn').classList.add('hidden');
             triggerUpdate();
@@ -599,6 +611,8 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     appState.bgImage = e.target.result;
+                    loadedBgImage = new Image();
+                    loadedBgImage.src = e.target.result;
                     updateBgImageStyle();
                     triggerUpdate();
                 };
@@ -624,7 +638,6 @@
             renderLivePreview();
         }
 
-        // Standard American Bingo Number Generation
         function generateCards() {
             triggerUpdate();
             const qty = parseInt(document.getElementById('card-quantity').value) || 10;
@@ -639,7 +652,6 @@
                 let cellValues = [];
 
                 if (appState.gameType === 'number' && size === 5) {
-                    // Standard American Bingo distribution per column
                     let colB = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 1)).slice(0, 5);
                     let colI = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 16)).slice(0, 5);
                     let colN = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 31)).slice(0, hasFree ? 4 : 5);
@@ -706,7 +718,6 @@
             return array;
         }
 
-        // Live Preview Renderer
         function renderLivePreview() {
             if (appState.generatedCards.length === 0) return;
             const card = appState.generatedCards[appState.previewIndex] || appState.generatedCards[0];
@@ -722,7 +733,6 @@
                 <div class="relative z-10 flex flex-col h-full text-slate-800">
             `;
 
-            // Header
             html += `<div class="text-center pb-3 border-b-2" style="border-color: ${appState.borderColor};">`;
             if (appState.logoUrl) {
                 html += `<img src="${appState.logoUrl}" class="h-10 mx-auto mb-1 object-contain" alt="Logo">`;
@@ -730,7 +740,6 @@
             html += `<h2 class="font-bold tracking-widest text-2xl" style="color: ${appState.borderColor};">${appState.headerText}</h2>`;
             html += `</div>`;
 
-            // Letter Row
             const size = appState.gridSize;
             if (appState.gameType === 'number' && size === 5) {
                 const letters = ['B', 'I', 'N', 'G', 'O'];
@@ -741,7 +750,6 @@
                 html += `</div>`;
             }
 
-            // Grid Cells
             html += `<div class="grid gap-1.5 my-2 flex-1" style="display: grid; grid-template-columns: repeat(${size}, minmax(0, 1fr));">`;
             
             card.cells.forEach(val => {
@@ -754,7 +762,6 @@
             });
             html += `</div>`;
 
-            // Footer
             if (appState.showFooter) {
                 html += `
                     <div class="pt-2 border-t flex justify-between items-center text-[10px] text-slate-500 font-semibold" style="border-color: ${appState.borderColor};">
@@ -780,10 +787,136 @@
             renderLivePreview();
         }
 
-        // Print Viewer & Layout
+        // Draw card onto HTML5 Canvas context
+        function createCardCanvasDataURL(card, width = 800, height = 1050) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = appState.bgColor;
+            ctx.fillRect(0, 0, width, height);
+
+            if (loadedBgImage && loadedBgImage.complete && loadedBgImage.naturalWidth !== 0) {
+                ctx.drawImage(loadedBgImage, 0, 0, width, height);
+            }
+
+            ctx.fillStyle = `rgba(255, 255, 255, ${appState.overlayOpacity / 100})`;
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.strokeStyle = appState.borderColor;
+            ctx.lineWidth = 8;
+            ctx.strokeRect(4, 4, width - 8, height - 8);
+
+            const padding = 40;
+            let currentY = padding;
+
+            if (loadedLogoImage && loadedLogoImage.complete && loadedLogoImage.naturalWidth !== 0) {
+                const logoH = 70;
+                const logoW = (loadedLogoImage.naturalWidth / loadedLogoImage.naturalHeight) * logoH;
+                ctx.drawImage(loadedLogoImage, (width - logoW) / 2, currentY, logoW, logoH);
+                currentY += logoH + 15;
+            }
+
+            ctx.font = `bold 42px ${appState.fontFamily}, sans-serif`;
+            ctx.fillStyle = appState.borderColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(appState.headerText, width / 2, currentY + 25);
+            currentY += 60;
+
+            ctx.beginPath();
+            ctx.moveTo(padding, currentY);
+            ctx.lineTo(width - padding, currentY);
+            ctx.strokeStyle = appState.borderColor;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            currentY += 20;
+
+            const size = appState.gridSize;
+
+            if (appState.gameType === 'number' && size === 5) {
+                const letters = ['B', 'I', 'N', 'G', 'O'];
+                const gridW = width - padding * 2;
+                const cellW = (gridW - (size - 1) * 12) / size;
+                const letterH = 55;
+
+                for (let col = 0; col < 5; col++) {
+                    const x = padding + col * (cellW + 12);
+                    ctx.fillStyle = appState.bgColor;
+                    ctx.fillRect(x, currentY, cellW, letterH);
+                    ctx.strokeStyle = appState.borderColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, currentY, cellW, letterH);
+
+                    ctx.font = `bold 28px ${appState.fontFamily}, sans-serif`;
+                    ctx.fillStyle = appState.borderColor;
+                    ctx.fillText(letters[col], x + cellW / 2, currentY + letterH / 2);
+                }
+                currentY += letterH + 15;
+            }
+
+            const gridW = width - padding * 2;
+            const footerH = appState.showFooter ? 60 : 0;
+            const gridH = height - currentY - padding - footerH - 15;
+            const cellW = (gridW - (size - 1) * 12) / size;
+            const cellH = (gridH - (size - 1) * 12) / size;
+
+            card.cells.forEach((val, idx) => {
+                const row = Math.floor(idx / size);
+                const col = idx % size;
+                const x = padding + col * (cellW + 12);
+                const y = currentY + row * (cellH + 12);
+
+                const isFree = val === 'FREE';
+
+                if (isFree) {
+                    ctx.fillStyle = '#4f46e5';
+                } else {
+                    ctx.fillStyle = 'rgba(248, 250, 252, 0.95)';
+                }
+                ctx.fillRect(x, y, cellW, cellH);
+
+                ctx.strokeStyle = appState.borderColor;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, cellW, cellH);
+
+                if (isFree) {
+                    ctx.fillStyle = '#ffffff';
+                } else {
+                    ctx.fillStyle = '#0f172a';
+                }
+
+                let fontSize = Math.min(cellW, cellH) * 0.4;
+                if (typeof val === 'string' && val.length > 8) fontSize *= 0.7;
+                ctx.font = `bold ${Math.round(fontSize)}px ${appState.fontFamily}, sans-serif`;
+                ctx.fillText(val, x + cellW / 2, y + cellH / 2);
+            });
+
+            if (appState.showFooter) {
+                const footerY = height - padding - 20;
+                ctx.beginPath();
+                ctx.moveTo(padding, footerY - 25);
+                ctx.lineTo(width - padding, footerY - 25);
+                ctx.strokeStyle = appState.borderColor;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.font = `600 18px ${appState.fontFamily}, sans-serif`;
+                ctx.fillStyle = '#475569';
+                ctx.textAlign = 'left';
+                ctx.fillText(appState.footerText, padding, footerY);
+
+                ctx.textAlign = 'right';
+                ctx.fillText(`Card #${card.id}`, width - padding, footerY);
+            }
+
+            return canvas.toDataURL('image/jpeg', 0.92);
+        }
+
+        // Render Cards as Individual Images in Preview & Print List
         function renderPrintPreview() {
             const container = document.getElementById('print-container');
-            const layout = parseInt(document.getElementById('print-layout').value);
 
             if (appState.generatedCards.length === 0) {
                 container.innerHTML = `<p class="text-center text-slate-400 py-12">No cards generated yet. Please generate cards first.</p>`;
@@ -791,114 +924,44 @@
             }
 
             let html = '';
-            let cardsPerPage = layout;
-            
-            for (let i = 0; i < appState.generatedCards.length; i += cardsPerPage) {
-                // Reduced padding (p-4) and gap (gap-4) to prevent page overflow
-                html += `<div class="print-page bg-white text-slate-900 p-4 rounded-xl shadow-2xl mb-6 mx-auto grid ${cardsPerPage === 4 ? 'grid-cols-2 grid-rows-2' : (cardsPerPage === 2 ? 'grid-cols-2' : 'grid-cols-1')} gap-4 items-center justify-center" style="max-width: 800px; height: 100vh; max-height: 1020px;">`;
-                
-                for (let j = 0; j < cardsPerPage; j++) {
-                    const card = appState.generatedCards[i + j];
-                    if (!card) break;
-
-                    html += `
-                        <div class="card-print-item relative p-4 rounded-xl shadow-md border-2 overflow-hidden flex flex-col justify-between h-[410px]" style="background-color: ${appState.bgColor}; border-color: ${appState.borderColor}; font-family: ${appState.fontFamily};">
-                            <div class="absolute inset-0 custom-card-bg"></div>
-                            <div class="absolute inset-0 bg-white" style="opacity: ${appState.overlayOpacity / 100};"></div>
-                            
-                            <div class="relative z-10 flex flex-col h-full">
-                                <div class="text-center pb-1.5 border-b-2" style="border-color: ${appState.borderColor};">
-                                    ${appState.logoUrl ? `<img src="${appState.logoUrl}" class="h-7 mx-auto mb-0.5 object-contain" alt="Logo">` : ''}
-                                    <h3 class="font-bold tracking-widest text-lg" style="color: ${appState.borderColor};">${appState.headerText}</h3>
-                                </div>
-                    `;
-
-                    // B-I-N-G-O Header Row for Print if 5x5 Number Bingo
-                    if (appState.gameType === 'number' && appState.gridSize === 5) {
-                        const letters = ['B', 'I', 'N', 'G', 'O'];
-                        html += `<div class="grid gap-1 mt-1 mb-1" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));">`;
-                        letters.forEach(letter => {
-                            html += `<div class="text-center font-bold text-xs py-0.5 rounded shadow-sm" style="color: ${appState.borderColor}; background-color: ${appState.bgColor}; border: 1px solid ${appState.borderColor};">${letter}</div>`;
-                        });
-                        html += `</div>`;
-                    }
-
-                    html += `
-                                <div class="grid gap-1 my-1 flex-1" style="display: grid; grid-template-columns: repeat(${appState.gridSize}, minmax(0, 1fr));">
-                    `;
-
-                    card.cells.forEach(val => {
-                        const isFree = val === 'FREE';
-                        html += `
-                            <div class="aspect-square flex items-center justify-center p-1 text-center font-bold rounded ${appState.textSize} ${isFree ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-900'}" style="border: 1px solid ${appState.borderColor};">
-                                <span class="truncate">${val}</span>
-                            </div>
-                        `;
-                    });
-
-                    html += `
-                                </div>
-                                ${appState.showFooter ? `
-                                    <div class="pt-1.5 border-t flex justify-between items-center text-[9px] text-slate-600 font-semibold" style="border-color: ${appState.borderColor};">
-                                        <span>${appState.footerText}</span>
-                                        <span>Card #${card.id}</span>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `;
-                }
-                html += `</div>`;
-            }
+            appState.generatedCards.forEach(card => {
+                const dataURL = createCardCanvasDataURL(card);
+                html += `
+                    <div class="print-page flex items-center justify-center py-6 border-b border-slate-200">
+                        <img src="${dataURL}" class="max-w-[550px] w-full h-auto object-contain rounded-2xl shadow-lg border border-slate-300" alt="Card #${card.id}">
+                    </div>
+                `;
+            });
 
             container.innerHTML = html;
         }
 
-        // SEPARATE PRINT FUNCTION
-        function triggerPrint() {
+        // Download all cards as individual JPG images inside a single ZIP file
+        function downloadCardsZIP() {
             if (appState.generatedCards.length === 0) {
-                showMsg("Notice", "Please generate cards first before printing.");
-                return;
-            }
-            window.print();
-        }
-
-        // SEPARATE SAVE AS PDF FUNCTION
-        function exportToPDF() {
-            if (appState.generatedCards.length === 0) {
-                showMsg("Notice", "Please generate cards first before exporting to PDF.");
+                showMsg("Notice", "Please generate bingo cards first.");
                 return;
             }
 
-            const element = document.getElementById('print-container');
-            const btn = document.getElementById('export-pdf-btn');
-            
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Exporting PDF...</span>`;
-            lucide.createIcons();
+            const zip = new JSZip();
+            const folder = zip.folder("bingo_cards");
 
-            const opt = {
-                margin:       0.3,
-                filename:     `Bingo_Cards_${appState.generatedCards.length}_Qty.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
+            appState.generatedCards.forEach(card => {
+                const dataURL = createCardCanvasDataURL(card);
+                const base64Data = dataURL.replace(/^data:image\/jpeg;base64,/, "");
+                folder.file(`Bingo_Card_${card.id}.jpg`, base64Data, { base64: true });
+            });
 
-            html2pdf().set(opt).from(element).save().then(() => {
-                btn.disabled = false;
-                btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i><span>Save as PDF</span>`;
-                lucide.createIcons();
-            }).catch(err => {
-                console.error(err);
-                btn.disabled = false;
-                btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i><span>Save as PDF</span>`;
-                lucide.createIcons();
-                showMsg("PDF Export Failed", "An error occurred during PDF generation.");
+            zip.generateAsync({ type: "blob" }).then(content => {
+                saveAs(content, `Bingo_Cards_${appState.generatedCards.length}_Qty.zip`);
             });
         }
 
-        // Caller Engine
+        function triggerPrint() {
+            window.print();
+        }
+
+        // Bingo Caller Logic
         function initDrawPool() {
             let pool = [];
             if (appState.gameType === 'number') {
@@ -953,7 +1016,7 @@
             } else {
                 const totalItems = appState.wordPool.length;
                 document.getElementById('game-mode-indicator').innerText = `Word Bingo (${totalItems} Words)`;
-                grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(60px, 1fr))`;
+                grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(50px, 1fr))`;
 
                 let html = '';
                 for (let i = 0; i < totalItems; i++) {
@@ -961,7 +1024,7 @@
                     let isDrawn = appState.draw.drawn.includes(item);
                     let isCurrent = appState.draw.current === item;
 
-                    let cls = 'aspect-square rounded-xl flex items-center justify-center font-bold text-xs transition shadow-sm p-1 text-center ';
+                    let cls = 'aspect-square rounded-xl flex items-center justify-center font-bold text-xs transition shadow-sm ';
                     if (isCurrent) {
                         cls += 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white ring-4 ring-indigo-400 scale-105 animate-pulse';
                     } else if (isDrawn) {
@@ -970,7 +1033,7 @@
                         cls += 'bg-slate-900 text-slate-400 border border-slate-700 hover:border-slate-500';
                     }
 
-                    html += `<div class="${cls}"><span class="truncate">${item}</span></div>`;
+                    html += `<div class="${cls}">${item}</div>`;
                 }
                 grid.innerHTML = html;
             }
@@ -978,7 +1041,7 @@
 
         function drawNextBall() {
             if (appState.draw.pool.length === 0) {
-                showMsg("Draw Complete", "All items have been drawn!");
+                showMsg("Draw Complete", "All balls/words have been drawn!");
                 stopAutoDraw();
                 return;
             }
@@ -1011,10 +1074,10 @@
             if (appState.gameType === 'number') {
                 const letter = getBingoLetter(item);
                 document.getElementById('modal-ball-text').innerText = `${letter}-${item}`;
-                document.getElementById('modal-ball-desc').innerText = `Ball ${letter}-${item} has been drawn!`;
+                document.getElementById('modal-ball-desc').innerText = `Ball ${letter}-${item} has been drawn successfully!`;
             } else {
                 document.getElementById('modal-ball-text').innerText = item;
-                document.getElementById('modal-ball-desc').innerText = `Word "${item}" has been drawn!`;
+                document.getElementById('modal-ball-desc').innerText = `Word "${item}" has been drawn successfully!`;
             }
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -1057,7 +1120,7 @@
 
         function confirmResetDraw() {
             stopAutoDraw();
-            openConfirmModal("Are you sure you want to reset the draw history?", () => {
+            openConfirmModal("Are you sure you want to reset the entire bingo draw history?", () => {
                 initDrawPool();
                 document.getElementById('current-ball-prefix').innerText = 'READY';
                 document.getElementById('current-ball-number').innerText = '--';
@@ -1066,7 +1129,6 @@
             });
         }
 
-        // Modals
         function showMsg(title, body) {
             document.getElementById('msg-title').innerText = title;
             document.getElementById('msg-body').innerText = body;
@@ -1101,7 +1163,6 @@
             modal.classList.add('hidden');
         }
 
-        // Storage
         function saveToLocalStorage() {
             try {
                 localStorage.setItem('bingo_studio_state', JSON.stringify({
@@ -1116,7 +1177,7 @@
                     wordPool: appState.wordPool
                 }));
             } catch (e) {
-                console.error("Storage write error", e);
+                console.error("Storage limit reached", e);
             }
         }
 
@@ -1147,7 +1208,7 @@
                     document.getElementById('border-color-text').value = appState.borderColor;
                 }
             } catch (e) {
-                console.error("Storage read error", e);
+                console.error("Failed to load local storage", e);
             }
         }
 
