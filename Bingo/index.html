@@ -23,7 +23,7 @@
       --free-text: #854d0e;
       --footer-text-color: #64748b;
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --cell-font-size: 1.5rem;
+      --cell-font-size: 2.5rem;
     }
 
     * {
@@ -69,6 +69,12 @@
       margin: 0 auto;
       width: 100%;
       flex-grow: 1;
+    }
+
+    @media (max-width: 900px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
     }
 
     .sidebar {
@@ -746,7 +752,6 @@ Blackberry</textarea>
 
       const bgOpacity = document.getElementById('bgOpacity').value;
 
-      // Update root variables for global styling
       document.documentElement.style.setProperty('--card-bg', '#ffffff');
       document.documentElement.style.setProperty('--header-bg', headerBg);
       document.documentElement.style.setProperty('--header-text', headerTextCol);
@@ -776,7 +781,6 @@ Blackberry</textarea>
         const cardContent = document.createElement('div');
         cardContent.className = 'card-content';
 
-        // Header Image / Logo
         if (uploadedHeaderImg) {
           const img = document.createElement('img');
           img.src = uploadedHeaderImg;
@@ -784,7 +788,6 @@ Blackberry</textarea>
           cardContent.appendChild(img);
         }
 
-        // Main Header Text
         if (headerText) {
           const header = document.createElement('div');
           header.className = 'bingo-header-text';
@@ -792,7 +795,6 @@ Blackberry</textarea>
           cardContent.appendChild(header);
         }
 
-        // Subtitle Text
         if (subtitleText) {
           const sub = document.createElement('div');
           sub.className = 'bingo-subtitle-text';
@@ -800,7 +802,6 @@ Blackberry</textarea>
           cardContent.appendChild(sub);
         }
 
-        // Grid
         const grid = document.createElement('div');
         grid.className = 'bingo-grid';
         grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
@@ -822,7 +823,6 @@ Blackberry</textarea>
 
         cardContent.appendChild(grid);
 
-        // Footer Formatting
         if (footerMode !== 'none') {
           const footer = document.createElement('div');
           footer.className = 'card-footer';
@@ -843,7 +843,6 @@ Blackberry</textarea>
       }
     }
 
-    // Initial render call
     renderCards();
   </script>
 </body>
