@@ -1,849 +1,996 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bingo Card Creator - Personal Edition</title>
-  <style>
-    :root {
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
-      --bg-color: #f8fafc;
-      --card-bg: #ffffff;
-      --text-color: #1e293b;
-      --border-color: #cbd5e1;
-      --header-bg: #4f46e5;
-      --header-text: #ffffff;
-      --subtitle-color: #64748b;
-      --cell-bg: #ffffff;
-      --cell-text: #1e293b;
-      --cell-border-color: #cbd5e1;
-      --cell-border-width: 2px;
-      --free-bg: #fef08a;
-      --free-text: #854d0e;
-      --footer-text-color: #64748b;
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --cell-font-size: 2.5rem;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Bingo Studio & Caller Machine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&family=Press+Start+2P&family=Permanent+Marker&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-fredoka { font-family: 'Fredoka', sans-serif; }
+        .font-playfair { font-family: 'Playfair Display', serif; }
+        .font-arcade { font-family: 'Press Start 2P', monospace; }
+        .font-marker { font-family: 'Permanent+Marker', cursive; }
+        .font-mono { font-family: 'Roboto Mono', monospace; }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: var(--font-family);
-    }
+        @keyframes bounce-ball {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.05); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.6); }
+            50% { box-shadow: 0 0 35px rgba(168, 85, 247, 0.9); }
+        }
+        .animate-bounce-ball { animation: bounce-ball 2s infinite ease-in-out; }
+        .animate-glow { animation: pulse-glow 3s infinite ease-in-out; }
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      min-height: 100vh;
-    }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    .app-container {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    header.app-header {
-      background-color: var(--primary);
-      color: white;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    header.app-header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .main-content {
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 2rem;
-      padding: 2rem;
-      max-width: 1700px;
-      margin: 0 auto;
-      width: 100%;
-      flex-grow: 1;
-    }
-
-    @media (max-width: 900px) {
-      .main-content {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .sidebar {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-      max-height: calc(100vh - 120px);
-      overflow-y: auto;
-    }
-
-    .section-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      border-bottom: 2px solid #f1f5f9;
-      padding-bottom: 0.4rem;
-      margin-bottom: 0.75rem;
-      color: #334155;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      margin-bottom: 0.75rem;
-    }
-
-    label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #475569;
-    }
-
-    input[type="text"], input[type="number"], select, textarea {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 0.9rem;
-      width: 100%;
-    }
-
-    input[type="color"] {
-      height: 38px;
-      padding: 2px;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 90px;
-    }
-
-    .row {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .row > * {
-      flex: 1;
-    }
-
-    .btn {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      padding: 0.65rem 1rem;
-      border-radius: 6px;
-      text-align: center;
-    }
-
-    .btn:hover {
-      background-color: var(--primary-hover);
-    }
-
-    .btn-success {
-      background-color: #10b981;
-    }
-
-    .btn-success:hover {
-      background-color: #059669;
-    }
-
-    .preview-area {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.5rem;
-    }
-
-    .cards-wrapper {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      justify-content: center;
-      width: 100%;
-    }
-
-    /* BINGO CARD DESIGN */
-    .bingo-card {
-      width: 100%;
-      max-width: 480px;
-      background: var(--card-bg);
-      border: 3px solid var(--border-color);
-      border-radius: 12px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-      position: relative;
-      background-size: cover;
-      background-position: center;
-      overflow: hidden;
-    }
-
-    .bingo-card::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255, 255, 255, var(--bg-opacity, 0));
-      z-index: 1;
-    }
-
-    .card-content {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      width: 100%;
-    }
-
-    .card-header-img {
-      max-height: 80px;
-      object-fit: contain;
-      margin-bottom: 8px;
-      width: 100%;
-    }
-
-    .bingo-header-text {
-      background-color: var(--header-bg);
-      color: var(--header-text);
-      text-align: center;
-      font-size: 2.2rem;
-      font-weight: 900;
-      padding: 6px 10px;
-      border-radius: 6px;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      line-height: 1.1;
-    }
-
-    .bingo-subtitle-text {
-      text-align: center;
-      color: var(--subtitle-color);
-      font-size: 0.95rem;
-      font-weight: 600;
-      margin-top: 4px;
-      margin-bottom: 8px;
-    }
-
-    .bingo-grid {
-      display: grid;
-      gap: 6px;
-      width: 100%;
-      margin: 8px 0;
-    }
-
-    /* SQUARE ASPECT RATIO CELL */
-    .bingo-cell {
-      aspect-ratio: 1 / 1;
-      background-color: var(--cell-bg);
-      color: var(--cell-text);
-      border: var(--cell-border-width) solid var(--cell-border-color);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-weight: 800;
-      font-size: var(--cell-font-size);
-      padding: 4px;
-      word-break: break-word;
-      hyphens: auto;
-      line-height: 1.1;
-    }
-
-    .bingo-cell.free-space {
-      background-color: var(--free-bg);
-      color: var(--free-text);
-      font-weight: 900;
-    }
-
-    .card-footer {
-      margin-top: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-align: center;
-      color: var(--footer-text-color);
-    }
-
-    /* PRINT STYLES */
-    @media print {
-      body {
-        background: white;
-      }
-      .sidebar, .app-header, .no-print {
-        display: none !important;
-      }
-      .main-content {
-        display: block;
-        padding: 0;
-        margin: 0;
-        max-width: none;
-      }
-      .preview-area {
-        padding: 0;
-        box-shadow: none;
-      }
-      .cards-wrapper {
-        display: grid !important;
-        gap: 15px;
-        width: 100%;
-      }
-      
-      .cards-wrapper.per-page-1 {
-        grid-template-columns: 1fr;
-      }
-      .cards-wrapper.per-page-1 .bingo-card {
-        page-break-after: always;
-        height: 95vh;
-        max-width: 100%;
-      }
-
-      .cards-wrapper.per-page-2 {
-        grid-template-columns: 1fr;
-      }
-      .cards-wrapper.per-page-2 .bingo-card {
-        max-width: 100%;
-        height: 46vh;
-      }
-      .cards-wrapper.per-page-2 .bingo-card:nth-child(2n) {
-        page-break-after: always;
-      }
-
-      .cards-wrapper.per-page-4 {
-        grid-template-columns: 1fr 1fr;
-      }
-      .cards-wrapper.per-page-4 .bingo-card {
-        max-width: 100%;
-        height: 46vh;
-      }
-      .cards-wrapper.per-page-4 .bingo-card:nth-child(4n) {
-        page-break-after: always;
-      }
-
-      .cards-wrapper.per-page-6 {
-        grid-template-columns: 1fr 1fr;
-      }
-      .cards-wrapper.per-page-6 .bingo-card {
-        max-width: 100%;
-        height: 30vh;
-      }
-      .cards-wrapper.per-page-6 .bingo-card:nth-child(6n) {
-        page-break-after: always;
-      }
-    }
-
-    @page {
-      margin: 0.5in;
-    }
-  </style>
+        /* Print Styles */
+        @media print {
+            body * { visibility: hidden; }
+            #print-container, #print-container * { visibility: visible; }
+            #print-container { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+            @page { size: auto; margin: 10mm; }
+        }
+    </style>
 </head>
-<body>
-  <div class="app-container">
-    <header class="app-header no-print">
-      <h1>Bingo Card Creator (Personal Edition)</h1>
-      <div>
-        <button class="btn btn-success" onclick="window.print()">Print / Export PDF</button>
-      </div>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-fredoka text-xl font-bold tracking-wide bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">BingoStudio Pro</h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Professional Card Generator & Caller Machine</p>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <nav class="flex space-x-1 sm:space-x-2 bg-slate-900/60 p-1.5 rounded-xl border border-slate-700/50">
+                <button onclick="switchTab('generator')" id="nav-generator" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 bg-indigo-600 text-white shadow">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Card Generator</span>
+                </button>
+                <button onclick="switchTab('viewer')" id="nav-viewer" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-800">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Cards Viewer & Print</span>
+                    <span id="card-badge" class="ml-1 px-1.5 py-0.5 text-[10px] bg-slate-700 rounded-full text-slate-300">0</span>
+                </button>
+                <button onclick="switchTab('caller')" id="nav-caller" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-800">
+                    <i data-lucide="disc" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Bingo Caller</span>
+                </button>
+            </nav>
+        </div>
     </header>
 
-    <div class="main-content">
-      <!-- SIDEBAR CONTROLS -->
-      <aside class="sidebar no-print">
-        <!-- 1. Mode & Grid -->
-        <div class="control-section">
-          <div class="section-title">1. Content & Mode</div>
-          <div class="form-group">
-            <label for="cardMode">Bingo Mode</label>
-            <select id="cardMode" onchange="toggleMode()">
-              <option value="words">Custom Words/Phrases</option>
-              <option value="numbers">Traditional Numbers (B1-O75)</option>
-            </select>
-          </div>
+    <!-- Main App Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
 
-          <div class="form-group">
-            <label for="gridSize">Grid Size</label>
-            <select id="gridSize" onchange="updateGridSize()">
-              <option value="5" selected>5x5 (Standard)</option>
-              <option value="4">4x4</option>
-              <option value="3">3x3</option>
-            </select>
-          </div>
+        <!-- TAB 1: CARD GENERATOR & CUSTOMIZER -->
+        <section id="tab-generator" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Controls Column -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                            <h2 class="font-fredoka text-lg font-semibold flex items-center space-x-2 text-indigo-300">
+                                <i data-lucide="sliders" class="w-5 h-5"></i>
+                                <span>Card Customization</span>
+                            </h2>
+                            <button onclick="resetDefaults()" class="text-xs text-slate-400 hover:text-indigo-400 underline transition">Reset Defaults</button>
+                        </div>
 
-          <div id="wordsContainer" class="form-group">
-            <label for="wordList">Word List (One per line, min <span id="minWordsLabel">24</span> words)</label>
-            <textarea id="wordList" oninput="renderCards()">Apple
-Banana
-Cherry
-Date
-Elderberry
-Fig
-Grape
-Honeydew
-Kiwi
-Lemon
-Mango
-Nectarine
-Orange
-Papaya
-Quince
-Raspberry
-Strawberry
-Tangerine
-Ugli Fruit
-Vanilla
-Watermelon
-Xigua
-Yellow Squash
-Zucchini
-Blueberry
-Blackberry</textarea>
-          </div>
+                        <!-- Game Type & Grid -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1.5">Game Type</label>
+                                <select id="game-type" onchange="updateGameType()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <option value="number">Number Bingo</option>
+                                    <option value="word">Word / Custom Bingo</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1.5">Grid Size</label>
+                                <select id="grid-size" onchange="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <option value="3">3 x 3</option>
+                                    <option value="4">4 x 4</option>
+                                    <option value="5" selected>5 x 5 (Standard)</option>
+                                </select>
+                            </div>
+                        </div>
 
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="freeSpaceCheck" checked onchange="renderCards()"> Include Free Space Center
-            </label>
-          </div>
-          <div class="form-group">
-            <label for="freeSpaceText">Free Space Text</label>
-            <input type="text" id="freeSpaceText" value="FREE" oninput="renderCards()">
-          </div>
+                        <!-- Word Pool Container (conditional) -->
+                        <div id="word-pool-section" class="space-y-2 hidden">
+                            <label class="block text-xs font-medium text-slate-300 flex justify-between">
+                                <span>Word Pool (Comma separated or per line)</span>
+                                <span id="word-count-badge" class="text-indigo-400">0 words</span>
+                            </label>
+                            <textarea id="word-pool-input" rows="3" placeholder="Apple, Banana, Cherry, Date, Elderberry..." oninput="updateWordPool()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-y"></textarea>
+                        </div>
+
+                        <!-- FREE Slot & Footer Toggles -->
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <label class="flex items-center space-x-3 cursor-pointer bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 hover:border-slate-600 transition">
+                                <input type="checkbox" id="free-slot-toggle" checked onchange="triggerUpdate()" class="w-4 h-4 text-indigo-600 rounded bg-slate-900 border-slate-700 focus:ring-indigo-500">
+                                <span class="text-xs font-medium text-slate-300">Center "FREE" Slot</span>
+                            </label>
+                            <label class="flex items-center space-x-3 cursor-pointer bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 hover:border-slate-600 transition">
+                                <input type="checkbox" id="footer-toggle" checked onchange="triggerUpdate()" class="w-4 h-4 text-indigo-600 rounded bg-slate-900 border-slate-700 focus:ring-indigo-500">
+                                <span class="text-xs font-medium text-slate-300">Card Footer & ID</span>
+                            </label>
+                        </div>
+
+                        <!-- Header & Footer Text Customization -->
+                        <div class="space-y-4 pt-2 border-t border-slate-700">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Header Title Text</label>
+                                <input type="text" id="header-text" value="BINGO" oninput="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Header Logo Image</label>
+                                <div class="flex items-center space-x-3">
+                                    <input type="file" id="logo-file" accept="image/*" onchange="handleLogoUpload(event)" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 file:cursor-pointer cursor-pointer">
+                                    <button id="remove-logo-btn" onclick="removeLogo()" class="hidden px-3 py-2 bg-rose-600/20 text-rose-400 rounded-xl hover:bg-rose-600/30 text-xs font-medium transition">Remove</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Footer Text / Event Name</label>
+                                <input type="text" id="footer-text" value="Annual Charity Bingo Night 2026" oninput="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Appearance & Styling -->
+                        <div class="space-y-4 pt-2 border-t border-slate-700">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Styling & Theme</h3>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Font Family</label>
+                                    <select id="font-family" onchange="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                        <option value="Inter">Inter (Clean)</option>
+                                        <option value="Fredoka" selected>Fredoka (Playful)</option>
+                                        <option value="Playfair Display">Playfair (Elegant)</option>
+                                        <option value="Press Start 2P">Arcade Pixel</option>
+                                        <option value="Permanent Marker">Marker Style</option>
+                                        <option value="Roboto Mono">Monospace</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Cell Text Size</label>
+                                    <select id="text-size" onchange="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                        <option value="text-xs">Extra Small</option>
+                                        <option value="text-sm">Small</option>
+                                        <option value="text-base" selected>Medium</option>
+                                        <option value="text-lg">Large</option>
+                                        <option value="text-xl">Extra Large</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Card Background Color</label>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="color" id="bg-color" value="#ffffff" onchange="triggerUpdate()" class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 cursor-pointer p-1">
+                                        <input type="text" id="bg-color-text" value="#ffffff" oninput="document.getElementById('bg-color').value=this.value; triggerUpdate();" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Border Color</label>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="color" id="border-color" value="#4f46e5" onchange="triggerUpdate()" class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 cursor-pointer p-1">
+                                        <input type="text" id="border-color-text" value="#4f46e5" oninput="document.getElementById('border-color').value=this.value; triggerUpdate();" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Background Image (Optional)</label>
+                                <input type="file" id="bg-image-file" accept="image/*" onchange="handleBgImageUpload(event)" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600 file:cursor-pointer cursor-pointer">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1 flex justify-between">
+                                    <span>Background Overlay Opacity</span>
+                                    <span id="overlay-val">20%</span>
+                                </label>
+                                <input type="range" id="overlay-opacity" min="0" max="100" value="20" oninput="document.getElementById('overlay-val').innerText=this.value+'%'; triggerUpdate();" class="w-full accent-indigo-500">
+                            </div>
+                        </div>
+
+                        <!-- Bulk Generation Quantity -->
+                        <div class="pt-4 border-t border-slate-700 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-medium text-slate-300">Cards to Generate (Max 1,000)</label>
+                                <input type="number" id="card-quantity" min="1" max="1000" value="10" class="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 text-center font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            </div>
+                            <button onclick="generateCards()" class="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition transform active:scale-[0.98]">
+                                <i data-lucide="wand-2" class="w-5 h-5"></i>
+                                <span>Generate Unique Cards</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Column -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl sticky top-24 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="font-fredoka text-lg font-semibold flex items-center space-x-2 text-indigo-300">
+                                <i data-lucide="eye" class="w-5 h-5"></i>
+                                <span>Live Card Preview</span>
+                            </h2>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-slate-400">Card #<span id="preview-card-id">1</span></span>
+                                <div class="flex items-center space-x-1 bg-slate-900 rounded-lg p-1 border border-slate-700">
+                                    <button onclick="prevPreviewCard()" class="p-1 hover:bg-slate-800 rounded text-slate-300"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                                    <button onclick="nextPreviewCard()" class="p-1 hover:bg-slate-800 rounded text-slate-300"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Live Card Render Frame -->
+                        <div class="flex justify-center overflow-auto p-4 bg-slate-950/60 rounded-xl border border-slate-700/50 min-h-[480px] items-center">
+                            <div id="live-card-preview" class="transition-all shadow-2xl rounded-2xl p-6 w-full max-w-[420px] relative overflow-hidden flex flex-col justify-between">
+                                <!-- Card content injected via JS -->
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button onclick="switchTab('viewer')" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-xl transition flex items-center space-x-2">
+                                <i data-lucide="printer" class="w-4 h-4"></i>
+                                <span>Proceed to Print Layouts</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 2: CARDS VIEWER & PRINT LAYOUT -->
+        <section id="tab-viewer" class="space-y-6 hidden">
+            <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="font-fredoka text-xl font-semibold text-indigo-300">Generated Bingo Cards (<span id="total-cards-count">0</span>)</h2>
+                        <p class="text-xs text-slate-400">Ready for printing or PDF export</p>
+                    </div>
+
+                    <!-- Print Configuration Controls -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div>
+                            <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Cards per Page</label>
+                            <select id="print-layout" onchange="renderPrintPreview()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <option value="1">1 Card per Page (Large)</option>
+                                <option value="2" selected>2 Cards per Page</option>
+                                <option value="4">4 Cards per Page (Compact)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Paper Size</label>
+                            <select id="paper-size" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <option value="letter">Letter (8.5 x 11 in)</option>
+                                <option value="a4">A4 (210 x 297 mm)</option>
+                            </select>
+                        </div>
+                        <button onclick="triggerPrint()" class="mt-4 sm:mt-0 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/30 flex items-center space-x-2 transition">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                            <span>Print / Save PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Print Container Area -->
+                <div id="print-container" class="space-y-8 bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                    <!-- Cards will be dynamically paginated here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: BINGO CALLER / DRAW MACHINE -->
+        <section id="tab-caller" class="space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Caller Controls & Tumbler -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl text-center space-y-6">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                            <h2 class="font-fredoka text-lg font-semibold flex items-center space-x-2 text-indigo-300">
+                                <i data-lucide="disc" class="w-5 h-5"></i>
+                                <span>Bingo Caller Machine</span>
+                            </h2>
+                            <button onclick="confirmResetDraw()" class="text-xs text-rose-400 hover:underline flex items-center space-x-1">
+                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                <span>Reset Draw</span>
+                            </button>
+                        </div>
+
+                        <!-- Current Ball / Word Display -->
+                        <div class="relative py-8 flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-indigo-950/40 rounded-2xl border border-indigo-500/30 shadow-inner overflow-hidden">
+                            <div class="absolute top-3 left-4 text-xs uppercase tracking-widest text-indigo-400 font-semibold">Latest Draw</div>
+                            
+                            <!-- Lottery Ball 3D effect -->
+                            <div id="current-ball-display" class="w-36 h-36 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 shadow-2xl shadow-indigo-500/50 flex flex-col items-center justify-center p-4 border-4 border-white/20 animate-glow transform transition-all duration-300">
+                                <span id="current-ball-prefix" class="text-xs font-bold uppercase tracking-wider text-white/80">READY</span>
+                                <span id="current-ball-number" class="font-fredoka text-4xl sm:text-5xl font-bold text-white tracking-tight">--</span>
+                            </div>
+
+                            <div class="mt-4 text-sm text-slate-300 font-medium" id="current-ball-subtitle">Click draw button below</div>
+                        </div>
+
+                        <!-- Draw Action Buttons -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="drawNextBall()" id="draw-btn" class="py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 transition transform active:scale-95">
+                                <i data-lucide="play" class="w-5 h-5"></i>
+                                <span>Draw Next</span>
+                            </button>
+                            <button onclick="toggleAutoDraw()" id="auto-draw-btn" class="py-3.5 px-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl flex items-center justify-center space-x-2 transition">
+                                <i data-lucide="clock" class="w-5 h-5"></i>
+                                <span id="auto-draw-label">Auto Draw (Off)</span>
+                            </button>
+                        </div>
+
+                        <!-- Stats & Progress -->
+                        <div class="grid grid-cols-2 gap-4 pt-2 text-left">
+                            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                                <div class="text-[10px] text-slate-400 uppercase font-semibold">Drawn Count</div>
+                                <div id="stats-drawn" class="font-fredoka text-xl font-bold text-indigo-400">0</div>
+                            </div>
+                            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                                <div class="text-[10px] text-slate-400 uppercase font-semibold">Remaining</div>
+                                <div id="stats-remaining" class="font-fredoka text-xl font-bold text-purple-400">75</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drawn History & Board Grid -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                            <h2 class="font-fredoka text-lg font-semibold flex items-center space-x-2 text-indigo-300">
+                                <i data-lucide="list-ordered" class="w-5 h-5"></i>
+                                <span>Master Board & History</span>
+                            </h2>
+                            <div class="text-xs text-slate-400" id="game-mode-indicator">Number Bingo (1 - 75)</div>
+                        </div>
+
+                        <!-- Master Grid Board -->
+                        <div id="master-board-grid" class="grid gap-2 max-h-[450px] overflow-y-auto p-2">
+                            <!-- Dynamic grid generated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Grand Zoom Ball Modal -->
+    <div id="zoom-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-indigo-500/50 rounded-3xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl transform scale-95 transition-all duration-300" id="zoom-modal-card">
+            <div class="w-32 h-32 mx-auto rounded-full bg-gradient-to-tr from-indigo-500 via-purple-600 to-pink-500 flex flex-col items-center justify-center shadow-2xl shadow-indigo-500/60 border-4 border-white/30 animate-bounce-ball">
+                <span id="modal-ball-prefix" class="text-xs font-bold uppercase tracking-wider text-white/90">BINGO</span>
+                <span id="modal-ball-text" class="font-fredoka text-4xl font-bold text-white">B-12</span>
+            </div>
+            <div class="space-y-2">
+                <h3 class="font-fredoka text-2xl font-bold text-white">Ball Drawn Successfully!</h3>
+                <p class="text-sm text-slate-400" id="modal-ball-desc">Number 12 has been called.</p>
+            </div>
+            <button onclick="closeZoomModal()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition">
+                Continue Game
+            </button>
         </div>
-
-        <!-- 2. Header, Subtitle & Logo -->
-        <div class="control-section">
-          <div class="section-title">2. Header & Subtitle</div>
-          <div class="form-group">
-            <label for="headerText">Header Text</label>
-            <input type="text" id="headerText" value="BINGO" oninput="renderCards()">
-          </div>
-          <div class="form-group">
-            <label for="subtitleText">Subtitle / Tagline (Optional)</label>
-            <input type="text" id="subtitleText" value="Personal Game Night" oninput="renderCards()">
-          </div>
-          <div class="form-group">
-            <label for="headerImgInput">Upload Custom Header/Logo</label>
-            <input type="file" id="headerImgInput" accept="image/*" onchange="handleHeaderImage(this)">
-          </div>
-        </div>
-
-        <!-- 3. Typography & Text Sizes -->
-        <div class="control-section">
-          <div class="section-title">3. Font & Cell Text Sizes</div>
-          <div class="form-group">
-            <label for="fontFamily">Font Style</label>
-            <select id="fontFamily" onchange="updateTypography()">
-              <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>Modern Sans-Serif</option>
-              <option value='"Arial Black", Impact, sans-serif'>Heavy Bold Impact</option>
-              <option value='"Comic Sans MS", "Chalkboard SE", cursive'>Playful / Comic</option>
-              <option value='Georgia, "Times New Roman", serif'>Classic Serif</option>
-              <option value='"Courier New", monospace'>Clean Monospace</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="fontSizePreset">Cell Font Size Preset</label>
-            <select id="fontSizePreset" onchange="handleFontSizePreset(this)">
-              <option value="1rem">Small (16px)</option>
-              <option value="1.25rem">Medium (20px)</option>
-              <option value="1.5rem">Large (24px)</option>
-              <option value="2rem">XL (32px)</option>
-              <option value="2.5rem" selected>2XL (40px)</option>
-              <option value="3rem">3XL (48px)</option>
-              <option value="3.5rem">4XL (56px)</option>
-              <option value="4rem">5XL (64px - Giant Numbers)</option>
-              <option value="custom">Custom Size Slider...</option>
-            </select>
-          </div>
-
-          <div class="form-group" id="customPxSliderGroup" style="display: none;">
-            <label for="customPxSlider">Custom Text Size: <span id="pxValueDisplay">40</span>px</label>
-            <input type="range" id="customPxSlider" min="12" max="72" value="40" oninput="handleCustomPxSlider(this.value)">
-          </div>
-        </div>
-
-        <!-- 4. Colors & Background -->
-        <div class="control-section">
-          <div class="section-title">4. Colors & Background</div>
-          <div class="form-group">
-            <label for="bgImgInput">Upload Background Image</label>
-            <input type="file" id="bgImgInput" accept="image/*" onchange="handleBgImage(this)">
-          </div>
-          <div class="form-group">
-            <label for="bgOpacity">Background Whitening / Overlay</label>
-            <input type="range" id="bgOpacity" min="0" max="0.9" step="0.1" value="0.2" oninput="renderCards()">
-          </div>
-
-          <div class="row">
-            <div class="form-group">
-              <label for="headerBgColor">Header Bg</label>
-              <input type="color" id="headerBgColor" value="#4f46e5" onchange="renderCards()">
-            </div>
-            <div class="form-group">
-              <label for="headerTextColor">Header Text</label>
-              <input type="color" id="headerTextColor" value="#ffffff" onchange="renderCards()">
-            </div>
-            <div class="form-group">
-              <label for="subtitleColor">Subtitle Text</label>
-              <input type="color" id="subtitleColor" value="#64748b" onchange="renderCards()">
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="form-group">
-              <label for="cellBgColor">Cell Bg</label>
-              <input type="color" id="cellBgColor" value="#ffffff" onchange="renderCards()">
-            </div>
-            <div class="form-group">
-              <label for="cellTextColor">Cell Text</label>
-              <input type="color" id="cellTextColor" value="#1e293b" onchange="renderCards()">
-            </div>
-            <div class="form-group">
-              <label for="cellBorderColor">Cell Border</label>
-              <input type="color" id="cellBorderColor" value="#cbd5e1" onchange="renderCards()">
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="form-group">
-              <label for="freeBgColor">Free Space Bg</label>
-              <input type="color" id="freeBgColor" value="#fef08a" onchange="renderCards()">
-            </div>
-            <div class="form-group">
-              <label for="freeTextColor">Free Space Text</label>
-              <input type="color" id="freeTextColor" value="#854d0e" onchange="renderCards()">
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. Footer Settings -->
-        <div class="control-section">
-          <div class="section-title">5. Footer Customization</div>
-          <div class="form-group">
-            <label for="footerMode">Footer Mode</label>
-            <select id="footerMode" onchange="renderCards()">
-              <option value="cardNum" selected>Card Number Only (Card #1)</option>
-              <option value="customText">Custom Text Only</option>
-              <option value="both">Card Number + Custom Text</option>
-              <option value="none">Hide Footer</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="customFooterText">Custom Footer Text</label>
-            <input type="text" id="customFooterText" value="Enjoy the Game!" oninput="renderCards()">
-          </div>
-          <div class="form-group">
-            <label for="footerTextColor">Footer Text Color</label>
-            <input type="color" id="footerTextColor" value="#64748b" onchange="renderCards()">
-          </div>
-        </div>
-
-        <!-- 6. Print & Layout Options -->
-        <div class="control-section">
-          <div class="section-title">6. Print & Bulk Options</div>
-          <div class="form-group">
-            <label for="cardCount">Number of Cards (1–500)</label>
-            <input type="number" id="cardCount" min="1" max="500" value="4" onchange="renderCards()">
-          </div>
-
-          <div class="form-group">
-            <label for="cardsPerPage">Cards Per Page (Layout)</label>
-            <select id="cardsPerPage" onchange="updatePageLayout()">
-              <option value="1">1 Card per page</option>
-              <option value="2">2 Cards per page</option>
-              <option value="4" selected>4 Cards per page</option>
-              <option value="6">6 Cards per page</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="paperSize">Paper Size</label>
-            <select id="paperSize" onchange="updatePaperSize()">
-              <option value="letter">Letter (8.5" x 11")</option>
-              <option value="legal">Legal (8.5" x 14")</option>
-              <option value="a4">A4 (210mm x 297mm)</option>
-              <option value="a3">A3 (297mm x 420mm)</option>
-            </select>
-          </div>
-        </div>
-      </aside>
-
-      <!-- PREVIEW & CARDS RENDER AREA -->
-      <main class="preview-area">
-        <div id="cardsWrapper" class="cards-wrapper per-page-4"></div>
-      </main>
     </div>
-  </div>
 
-  <style id="dynamicPageStyle">
-    @page { size: letter; }
-  </style>
+    <!-- Custom Notification / Message Box -->
+    <div id="msg-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
+            <h3 id="msg-title" class="font-fredoka text-lg font-bold text-white">Notice</h3>
+            <p id="msg-body" class="text-sm text-slate-300">Message content here.</p>
+            <button onclick="closeMsgModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition">OK</button>
+        </div>
+    </div>
 
-  <script>
-    let uploadedHeaderImg = null;
-    let uploadedBgImg = null;
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
+            <h3 class="font-fredoka text-lg font-bold text-white">Confirm Action</h3>
+            <p id="confirm-body" class="text-sm text-slate-300">Are you sure you want to reset the draw?</p>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="closeConfirmModal()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold rounded-xl transition">Cancel</button>
+                <button id="confirm-yes-btn" class="py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold rounded-xl transition">Confirm</button>
+            </div>
+        </div>
+    </div>
 
-    function toggleMode() {
-      const mode = document.getElementById('cardMode').value;
-      const wordsContainer = document.getElementById('wordsContainer');
-      if (mode === 'numbers') {
-        wordsContainer.style.display = 'none';
-        document.getElementById('headerText').value = 'BINGO';
-      } else {
-        wordsContainer.style.display = 'flex';
-      }
-      renderCards();
-    }
-
-    function updateGridSize() {
-      const size = parseInt(document.getElementById('gridSize').value);
-      document.getElementById('minWordsLabel').innerText = (size * size) - 1;
-      renderCards();
-    }
-
-    function updateTypography() {
-      const font = document.getElementById('fontFamily').value;
-      document.documentElement.style.setProperty('--font-family', font);
-      renderCards();
-    }
-
-    function handleFontSizePreset(selectEl) {
-      const sliderGroup = document.getElementById('customPxSliderGroup');
-      if (selectEl.value === 'custom') {
-        sliderGroup.style.display = 'flex';
-        const customPx = document.getElementById('customPxSlider').value;
-        document.documentElement.style.setProperty('--cell-font-size', customPx + 'px');
-      } else {
-        sliderGroup.style.display = 'none';
-        document.documentElement.style.setProperty('--cell-font-size', selectEl.value);
-      }
-      renderCards();
-    }
-
-    function handleCustomPxSlider(val) {
-      document.getElementById('pxValueDisplay').innerText = val;
-      document.documentElement.style.setProperty('--cell-font-size', val + 'px');
-      renderCards();
-    }
-
-    function handleHeaderImage(input) {
-      if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          uploadedHeaderImg = e.target.result;
-          renderCards();
+    <script>
+        // Global Application State
+        let appState = {
+            gameType: 'number', // 'number' or 'word'
+            gridSize: 5,        // 3, 4, or 5
+            freeSlot: true,
+            headerText: 'BINGO',
+            logoUrl: null,
+            footerText: 'Annual Charity Bingo Night 2026',
+            showFooter: true,
+            fontFamily: 'Fredoka',
+            textSize: 'text-base',
+            bgColor: '#ffffff',
+            borderColor: '#4f46e5',
+            bgImage: null,
+            overlayOpacity: 20,
+            cardQuantity: 10,
+            wordPool: ['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry', 'Fig', 'Grape', 'Honeydew', 'Kiwi', 'Lemon', 'Mango', 'Nectarine', 'Orange', 'Papaya', 'Quince', 'Raspberry', 'Strawberry', 'Tangerine', 'Ugli', 'Vanilla', 'Watermelon', 'Xigua', 'Yam', 'Zucchini'],
+            generatedCards: [],
+            previewIndex: 0,
+            draw: {
+                pool: [],
+                drawn: [],
+                current: null,
+                autoTimer: null,
+                isAutoRunning: false
+            }
         };
-        reader.readAsDataURL(input.files[0]);
-      }
-    }
 
-    function handleBgImage(input) {
-      if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          uploadedBgImg = e.target.result;
-          renderCards();
-        };
-        reader.readAsDataURL(input.files[0]);
-      }
-    }
-
-    function updatePageLayout() {
-      const perPage = document.getElementById('cardsPerPage').value;
-      const wrapper = document.getElementById('cardsWrapper');
-      wrapper.className = `cards-wrapper per-page-${perPage}`;
-    }
-
-    function updatePaperSize() {
-      const size = document.getElementById('paperSize').value;
-      const styleEl = document.getElementById('dynamicPageStyle');
-      styleEl.innerHTML = `@page { size: ${size}; }`;
-    }
-
-    function generateCardItems(cardIndex, mode, size, rawWords) {
-      const totalCells = size * size;
-      let items = [];
-
-      if (mode === 'numbers' && size === 5) {
-        const ranges = [
-          [1, 15],   // B
-          [16, 30],  // I
-          [31, 45],  // N
-          [46, 60],  // G
-          [61, 75]   // O
-        ];
-
-        let colItems = [[], [], [], [], []];
-        for (let col = 0; col < 5; col++) {
-          let pool = [];
-          for (let n = ranges[col][0]; n <= ranges[col][1]; n++) pool.push(n);
-          pool.sort(() => Math.sin(cardIndex * 99 + col * 17) - 0.5);
-          colItems[col] = pool.slice(0, 5);
-        }
-
-        for (let row = 0; row < 5; row++) {
-          for (let col = 0; col < 5; col++) {
-            items.push(colItems[col][row]);
-          }
-        }
-      } else {
-        let pool = [...rawWords];
-        if (pool.length < totalCells - 1) {
-          while (pool.length < totalCells) {
-            pool.push(...rawWords);
-          }
-        }
-        pool.sort(() => Math.sin(cardIndex * 13 + pool.length) - 0.5);
-        items = pool.slice(0, totalCells);
-      }
-
-      return items;
-    }
-
-    function renderCards() {
-      const wrapper = document.getElementById('cardsWrapper');
-      wrapper.innerHTML = '';
-
-      const mode = document.getElementById('cardMode').value;
-      const size = parseInt(document.getElementById('gridSize').value);
-      const count = Math.min(500, Math.max(1, parseInt(document.getElementById('cardCount').value) || 1));
-      const hasFreeSpace = document.getElementById('freeSpaceCheck').checked;
-      const freeText = document.getElementById('freeSpaceText').value;
-      
-      const headerText = document.getElementById('headerText').value;
-      const subtitleText = document.getElementById('subtitleText').value;
-      const subtitleColor = document.getElementById('subtitleColor').value;
-      
-      const headerBg = document.getElementById('headerBgColor').value;
-      const headerTextCol = document.getElementById('headerTextColor').value;
-      const cellBg = document.getElementById('cellBgColor').value;
-      const cellTextCol = document.getElementById('cellTextColor').value;
-      const cellBorderCol = document.getElementById('cellBorderColor').value;
-      
-      const freeBg = document.getElementById('freeBgColor').value;
-      const freeTextCol = document.getElementById('freeTextColor').value;
-      
-      const footerMode = document.getElementById('footerMode').value;
-      const customFooterText = document.getElementById('customFooterText').value;
-      const footerTextColor = document.getElementById('footerTextColor').value;
-
-      const bgOpacity = document.getElementById('bgOpacity').value;
-
-      document.documentElement.style.setProperty('--card-bg', '#ffffff');
-      document.documentElement.style.setProperty('--header-bg', headerBg);
-      document.documentElement.style.setProperty('--header-text', headerTextCol);
-      document.documentElement.style.setProperty('--subtitle-color', subtitleColor);
-      document.documentElement.style.setProperty('--cell-bg', cellBg);
-      document.documentElement.style.setProperty('--cell-text', cellTextCol);
-      document.documentElement.style.setProperty('--cell-border-color', cellBorderCol);
-      document.documentElement.style.setProperty('--free-bg', freeBg);
-      document.documentElement.style.setProperty('--free-text', freeTextCol);
-      document.documentElement.style.setProperty('--footer-text-color', footerTextColor);
-
-      const rawWords = document.getElementById('wordList').value
-        .split('\n')
-        .map(w => w.trim())
-        .filter(w => w.length > 0);
-
-      const centerIndex = Math.floor((size * size) / 2);
-
-      for (let i = 0; i < count; i++) {
-        const card = document.createElement('div');
-        card.className = 'bingo-card';
-        card.style.setProperty('--bg-opacity', bgOpacity);
-        if (uploadedBgImg) {
-          card.style.backgroundImage = `url(${uploadedBgImg})`;
-        }
-
-        const cardContent = document.createElement('div');
-        cardContent.className = 'card-content';
-
-        if (uploadedHeaderImg) {
-          const img = document.createElement('img');
-          img.src = uploadedHeaderImg;
-          img.className = 'card-header-img';
-          cardContent.appendChild(img);
-        }
-
-        if (headerText) {
-          const header = document.createElement('div');
-          header.className = 'bingo-header-text';
-          header.innerText = headerText;
-          cardContent.appendChild(header);
-        }
-
-        if (subtitleText) {
-          const sub = document.createElement('div');
-          sub.className = 'bingo-subtitle-text';
-          sub.innerText = subtitleText;
-          cardContent.appendChild(sub);
-        }
-
-        const grid = document.createElement('div');
-        grid.className = 'bingo-grid';
-        grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-
-        const cardItems = generateCardItems(i, mode, size, rawWords);
-
-        cardItems.forEach((item, idx) => {
-          const cell = document.createElement('div');
-          cell.className = 'bingo-cell';
-
-          if (hasFreeSpace && idx === centerIndex) {
-            cell.classList.add('free-space');
-            cell.innerText = freeText || 'FREE';
-          } else {
-            cell.innerText = item;
-          }
-          grid.appendChild(cell);
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadFromLocalStorage();
+            initApp();
         });
 
-        cardContent.appendChild(grid);
-
-        if (footerMode !== 'none') {
-          const footer = document.createElement('div');
-          footer.className = 'card-footer';
-          let footerStr = '';
-          if (footerMode === 'cardNum') {
-            footerStr = `Card #${i + 1}`;
-          } else if (footerMode === 'customText') {
-            footerStr = customFooterText;
-          } else if (footerMode === 'both') {
-            footerStr = `Card #${i + 1} - ${customFooterText}`;
-          }
-          footer.innerText = footerStr;
-          cardContent.appendChild(footer);
+        // Tab Navigation
+        function switchTab(tabId) {
+            ['generator', 'viewer', 'caller'].forEach(id => {
+                document.getElementById('tab-' + id).classList.add('hidden');
+                document.getElementById('nav-' + id).className = "tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-800";
+            });
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('nav-' + tabId).className = "tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 bg-indigo-600 text-white shadow";
+            
+            if (tabId === 'viewer') {
+                renderPrintPreview();
+            } else if (tabId === 'caller') {
+                initMasterBoard();
+            }
+            lucide.createIcons();
         }
 
-        card.appendChild(cardContent);
-        wrapper.appendChild(card);
-      }
-    }
+        // Initialize App & Defaults
+        function initApp() {
+            updateGameType();
+            generateCards();
+        }
 
-    renderCards();
-  </script>
+        function resetDefaults() {
+            document.getElementById('game-type').value = 'number';
+            document.getElementById('grid-size').value = '5';
+            document.getElementById('free-slot-toggle').checked = true;
+            document.getElementById('footer-toggle').checked = true;
+            document.getElementById('header-text').value = 'BINGO';
+            document.getElementById('footer-text').value = 'Annual Charity Bingo Night 2026';
+            document.getElementById('font-family').value = 'Fredoka';
+            document.getElementById('text-size').value = 'text-base';
+            document.getElementById('bg-color').value = '#ffffff';
+            document.getElementById('bg-color-text').value = '#ffffff';
+            document.getElementById('border-color').value = '#4f46e5';
+            document.getElementById('border-color-text').value = '#4f46e5';
+            document.getElementById('overlay-opacity').value = 20;
+            document.getElementById('overlay-val').innerText = '20%';
+            document.getElementById('card-quantity').value = 10;
+            appState.logoUrl = null;
+            appState.bgImage = null;
+            document.getElementById('remove-logo-btn').classList.add('hidden');
+            document.getElementById('logo-file').value = '';
+            document.getElementById('bg-image-file').value = '';
+            triggerUpdate();
+            showMsg("Defaults Restored", "All customization settings have been reset.");
+        }
+
+        function updateGameType() {
+            const type = document.getElementById('game-type').value;
+            appState.gameType = type;
+            const wordSection = document.getElementById('word-pool-section');
+            if (type === 'word') {
+                wordSection.classList.remove('hidden');
+                document.getElementById('word-pool-input').value = appState.wordPool.join(', ');
+                updateWordPoolCount();
+            } else {
+                wordSection.classList.add('hidden');
+            }
+            triggerUpdate();
+        }
+
+        function updateWordPool() {
+            const val = document.getElementById('word-pool-input').value;
+            appState.wordPool = val.split(/[\n,]+/).map(w => w.trim()).filter(w => w.length > 0);
+            updateWordPoolCount();
+            triggerUpdate();
+        }
+
+        function updateWordPoolCount() {
+            document.getElementById('word-count-badge').innerText = appState.wordPool.length + ' words';
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    appState.logoUrl = e.target.result;
+                    document.getElementById('remove-logo-btn').classList.remove('hidden');
+                    triggerUpdate();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeLogo() {
+            appState.logoUrl = null;
+            document.getElementById('logo-file').value = '';
+            document.getElementById('remove-logo-btn').classList.add('hidden');
+            triggerUpdate();
+        }
+
+        function handleBgImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    appState.bgImage = e.target.result;
+                    triggerUpdate();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function triggerUpdate() {
+            appState.gridSize = parseInt(document.getElementById('grid-size').value);
+            appState.freeSlot = document.getElementById('free-slot-toggle').checked;
+            appState.headerText = document.getElementById('header-text').value || 'BINGO';
+            appState.footerText = document.getElementById('footer-text').value;
+            appState.showFooter = document.getElementById('footer-toggle').checked;
+            appState.fontFamily = document.getElementById('font-family').value;
+            appState.textSize = document.getElementById('text-size').value;
+            appState.bgColor = document.getElementById('bg-color').value;
+            appState.borderColor = document.getElementById('border-color').value;
+            appState.overlayOpacity = parseInt(document.getElementById('overlay-opacity').value);
+            
+            // Sync text inputs
+            document.getElementById('bg-color-text').value = appState.bgColor;
+            document.getElementById('border-color-text').value = appState.borderColor;
+
+            renderLivePreview();
+        }
+
+        // Card Generation Logic
+        function generateCards() {
+            triggerUpdate();
+            const qty = parseInt(document.getElementById('card-quantity').value) || 10;
+            appState.cardQuantity = Math.min(Math.max(qty, 1), 1000);
+            appState.generatedCards = [];
+
+            const size = appState.gridSize;
+            const totalCells = size * size;
+            const hasFree = appState.freeSlot && (totalCells % 2 === 1);
+            const neededItems = hasFree ? totalCells - 1 : totalCells;
+
+            for (let i = 0; i < appState.cardQuantity; i++) {
+                let cellValues = [];
+                if (appState.gameType === 'number') {
+                    // Standard B-I-N-G-O column distribution or random range
+                    let maxNum = size === 3 ? 30 : (size === 4 ? 60 : 75);
+                    let allNums = Array.from({length: maxNum}, (_, idx) => idx + 1);
+                    shuffleArray(allNums);
+                    cellValues = allNums.slice(0, neededItems);
+                } else {
+                    let pool = [...appState.wordPool];
+                    if (pool.length < neededItems) {
+                        // Pad pool if not enough words
+                        while (pool.length < neededItems) {
+                            pool.push('Word ' + (pool.length + 1));
+                        }
+                    }
+                    shuffleArray(pool);
+                    cellValues = pool.slice(0, neededItems);
+                }
+
+                if (hasFree) {
+                    const mid = Math.floor(totalCells / 2);
+                    cellValues.splice(mid, 0, 'FREE');
+                }
+
+                appState.generatedCards.push({
+                    id: i + 1,
+                    cells: cellValues
+                });
+            }
+
+            appState.previewIndex = 0;
+            document.getElementById('card-badge').innerText = appState.generatedCards.length;
+            document.getElementById('total-cards-count').innerText = appState.generatedCards.length;
+            renderLivePreview();
+            initDrawPool();
+            showMsg("Cards Generated!", `${appState.generatedCards.length} unique bingo cards successfully generated.`);
+            saveToLocalStorage();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Live Preview Renderer
+        function renderLivePreview() {
+            if (appState.generatedCards.length === 0) return;
+            const card = appState.generatedCards[appState.previewIndex] || appState.generatedCards[0];
+            document.getElementById('preview-card-id').innerText = card.id;
+
+            const previewEl = document.getElementById('live-card-preview');
+            previewEl.style.fontFamily = appState.fontFamily;
+            previewEl.style.backgroundColor = appState.bgColor;
+
+            let bgStyle = '';
+            if (appState.bgImage) {
+                bgStyle = `background-image: url('${appState.bgImage}'); background-size: cover; background-position: center;`;
+            }
+
+            let html = `
+                <div class="absolute inset-0" style="${bgStyle}"></div>
+                <div class="absolute inset-0 bg-white" style="opacity: ${appState.overlayOpacity / 100};"></div>
+                <div class="relative z-10 flex flex-col h-full text-slate-800">
+            `;
+
+            // Header
+            html += `<div class="text-center pb-3 border-b-2" style="border-color: ${appState.borderColor};">`;
+            if (appState.logoUrl) {
+                html += `<img src="${appState.logoUrl}" class="h-10 mx-auto mb-1 object-contain" alt="Logo">`;
+            }
+            html += `<h2 class="font-bold tracking-widest text-2xl" style="color: ${appState.borderColor};">${appState.headerText}</h2>`;
+            html += `</div>`;
+
+            // Grid Cells
+            const size = appState.gridSize;
+            html += `<div class="grid grid-cols-${size} gap-1.5 my-3 flex-1">`;
+            
+            card.cells.forEach(val => {
+                const isFree = val === 'FREE';
+                html += `
+                    <div class="aspect-square flex items-center justify-center p-1 text-center font-bold rounded-lg transition shadow-sm ${appState.textSize} ${isFree ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-slate-50/90 text-slate-900'}" style="border: 2px solid ${appState.borderColor};">
+                        <span class="truncate">${val}</span>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+
+            // Footer
+            if (appState.showFooter) {
+                html += `
+                    <div class="pt-2 border-t flex justify-between items-center text-[10px] text-slate-500 font-semibold" style="border-color: ${appState.borderColor};">
+                        <span>${appState.footerText}</span>
+                        <span>Card #${card.id}</span>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            previewEl.innerHTML = html;
+        }
+
+        function prevPreviewCard() {
+            if (appState.generatedCards.length === 0) return;
+            appState.previewIndex = (appState.previewIndex - 1 + appState.generatedCards.length) % appState.generatedCards.length;
+            renderLivePreview();
+        }
+
+        function nextPreviewCard() {
+            if (appState.generatedCards.length === 0) return;
+            appState.previewIndex = (appState.previewIndex + 1) % appState.generatedCards.length;
+            renderLivePreview();
+        }
+
+        // Print Viewer & Layout
+        function renderPrintPreview() {
+            const container = document.getElementById('print-container');
+            const layout = parseInt(document.getElementById('print-layout').value);
+            const paperSize = document.getElementById('paper-size').value;
+
+            if (appState.generatedCards.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-400 py-12">No cards generated yet. Please generate cards first.</p>`;
+                return;
+            }
+
+            let html = '';
+            let cardsPerPage = layout;
+            
+            for (let i = 0; i < appState.generatedCards.length; i += cardsPerPage) {
+                html += `<div class="print-page bg-white text-slate-900 p-8 rounded-2xl shadow-2xl mb-8 page-break mx-auto grid grid-cols-${cardsPerPage === 4 ? '2' : (cardsPerPage === 2 ? '2' : '1')} gap-6 items-center justify-center" style="max-width: 800px; min-height: 1000px;">`;
+                
+                for (let j = 0; j < cardsPerPage; j++) {
+                    const card = appState.generatedCards[i + j];
+                    if (!card) break;
+                    
+                    let bgStyle = '';
+                    if (appState.bgImage) {
+                        bgStyle = `background-image: url('${appState.bgImage}'); background-size: cover; background-position: center;`;
+                    }
+
+                    html += `
+                        <div class="card-print-item relative p-5 rounded-2xl shadow-md border-2 overflow-hidden flex flex-col justify-between h-[440px]" style="background-color: ${appState.bgColor}; border-color: ${appState.borderColor}; font-family: ${appState.fontFamily};">
+                            <div class="absolute inset-0" style="${bgStyle}"></div>
+                            <div class="absolute inset-0 bg-white" style="opacity: ${appState.overlayOpacity / 100};"></div>
+                            
+                            <div class="relative z-10 flex flex-col h-full">
+                                <div class="text-center pb-2 border-b-2" style="border-color: ${appState.borderColor};">
+                                    ${appState.logoUrl ? `<img src="${appState.logoUrl}" class="h-8 mx-auto mb-1 object-contain" alt="Logo">` : ''}
+                                    <h3 class="font-bold tracking-widest text-xl" style="color: ${appState.borderColor};">${appState.headerText}</h3>
+                                </div>
+
+                                <div class="grid grid-cols-${appState.gridSize} gap-1 my-2 flex-1">
+                    `;
+
+                    card.cells.forEach(val => {
+                        const isFree = val === 'FREE';
+                        html += `
+                            <div class="aspect-square flex items-center justify-center p-1 text-center font-bold rounded ${appState.textSize} ${isFree ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-900'}" style="border: 1px solid ${appState.borderColor};">
+                                <span class="truncate">${val}</span>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                                </div>
+                                ${appState.showFooter ? `
+                                    <div class="pt-2 border-t flex justify-between items-center text-[9px] text-slate-600 font-semibold" style="border-color: ${appState.borderColor};">
+                                        <span>${appState.footerText}</span>
+                                        <span>Card #${card.id}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                html += `</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function triggerPrint() {
+            window.print();
+        }
+
+        // Bingo Caller / Draw Logic
+        function initDrawPool() {
+            let pool = [];
+            if (appState.gameType === 'number') {
+                let maxNum = appState.gridSize === 3 ? 30 : (appState.gridSize === 4 ? 60 : 75);
+                pool = Array.from({length: maxNum}, (_, i) => i + 1);
+            } else {
+                pool = [...appState.wordPool];
+            }
+            shuffleArray(pool);
+            appState.draw.pool = pool;
+            appState.draw.drawn = [];
+            appState.draw.current = null;
+            updateDrawStats();
+            initMasterBoard();
+        }
+
+        function initMasterBoard() {
+            const grid = document.getElementById('master-board-grid');
+            const totalItems = appState.gameType === 'number' ? (appState.gridSize === 3 ? 30 : (appState.gridSize === 4 ? 60 : 75)) : appState.wordPool.length;
+            
+            document.getElementById('game-mode-indicator').innerText = appState.gameType === 'number' ? `Number Bingo (1 - ${totalItems})` : `Word Bingo (${totalItems} Words)`;
+
+            let cols = appState.gameType === 'number' ? 10 : 4;
+            grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(50px, 1fr))`;
+
+            let html = '';
+            for (let i = 0; i < totalItems; i++) {
+                let item = appState.gameType === 'number' ? (i + 1) : appState.wordPool[i];
+                let isDrawn = appState.draw.drawn.includes(item);
+                let isCurrent = appState.draw.current === item;
+
+                let cls = 'aspect-square rounded-xl flex items-center justify-center font-bold text-xs transition shadow-sm ';
+                if (isCurrent) {
+                    cls += 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white ring-4 ring-indigo-400 scale-105 animate-pulse';
+                } else if (isDrawn) {
+                    cls += 'bg-emerald-600 text-white shadow-emerald-600/30';
+                } else {
+                    cls += 'bg-slate-900 text-slate-400 border border-slate-700 hover:border-slate-500';
+                }
+
+                html += `<div class="${cls}">${item}</div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        function drawNextBall() {
+            if (appState.draw.pool.length === 0) {
+                showMsg("Draw Complete", "All balls/words have been drawn!");
+                stopAutoDraw();
+                return;
+            }
+
+            const drawnItem = appState.draw.pool.shift();
+            appState.draw.drawn.push(drawnItem);
+            appState.draw.current = drawnItem;
+
+            // Update UI
+            document.getElementById('current-ball-prefix').innerText = appState.gameType === 'number' ? 'BALL' : 'WORD';
+            document.getElementById('current-ball-number').innerText = drawnItem;
+            document.getElementById('current-ball-subtitle').innerText = `Drawn at ${new Date().toLocaleTimeString()}`;
+
+            updateDrawStats();
+            initMasterBoard();
+            showZoomModal(drawnItem);
+        }
+
+        function updateDrawStats() {
+            document.getElementById('stats-drawn').innerText = appState.draw.drawn.length;
+            document.getElementById('stats-remaining').innerText = appState.draw.pool.length;
+        }
+
+        function showZoomModal(item) {
+            const modal = document.getElementById('zoom-modal');
+            document.getElementById('modal-ball-text').innerText = item;
+            document.getElementById('modal-ball-desc').innerText = `${appState.gameType === 'number' ? 'Number' : 'Word'} "${item}" has been drawn successfully!`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeZoomModal() {
+            const modal = document.getElementById('zoom-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        function toggleAutoDraw() {
+            if (appState.draw.isAutoRunning) {
+                stopAutoDraw();
+            } else {
+                startAutoDraw();
+            }
+        }
+
+        function startAutoDraw() {
+            appState.draw.isAutoRunning = true;
+            document.getElementById('auto-draw-btn').className = "py-3.5 px-4 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl flex items-center justify-center space-x-2 transition";
+            document.getElementById('auto-draw-label').innerText = "Stop Auto Draw";
+            
+            appState.draw.autoTimer = setInterval(() => {
+                if (appState.draw.pool.length === 0) {
+                    stopAutoDraw();
+                } else {
+                    drawNextBall();
+                }
+            }, 3000);
+        }
+
+        function stopAutoDraw() {
+            appState.draw.isAutoRunning = false;
+            clearInterval(appState.draw.autoTimer);
+            document.getElementById('auto-draw-btn').className = "py-3.5 px-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl flex items-center justify-center space-x-2 transition";
+            document.getElementById('auto-draw-label').innerText = "Auto Draw (Off)";
+        }
+
+        function confirmResetDraw() {
+            stopAutoDraw();
+            openConfirmModal("Are you sure you want to reset the entire bingo draw history?", () => {
+                initDrawPool();
+                document.getElementById('current-ball-prefix').innerText = 'READY';
+                document.getElementById('current-ball-number').innerText = '--';
+                document.getElementById('current-ball-subtitle').innerText = 'Click draw button below';
+                showMsg("Draw Reset", "Bingo draw history has been cleared.");
+            });
+        }
+
+        // Modals Helper
+        function showMsg(title, body) {
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-body').innerText = body;
+            const modal = document.getElementById('msg-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeMsgModal() {
+            const modal = document.getElementById('msg-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        function openConfirmModal(text, onConfirm) {
+            document.getElementById('confirm-body').innerText = text;
+            const modal = document.getElementById('confirm-modal');
+            const yesBtn = document.getElementById('confirm-yes-btn');
+            
+            yesBtn.onclick = () => {
+                closeConfirmModal();
+                onConfirm();
+            };
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        // Local Storage Persistence
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('bingo_studio_state', JSON.stringify({
+                    gameType: appState.gameType,
+                    gridSize: appState.gridSize,
+                    freeSlot: appState.freeSlot,
+                    headerText: appState.headerText,
+                    footerText: appState.footerText,
+                    fontFamily: appState.fontFamily,
+                    bgColor: appState.bgColor,
+                    borderColor: appState.borderColor,
+                    wordPool: appState.wordPool
+                }));
+            } catch (e) {
+                console.error("Storage limit reached", e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('bingo_studio_state');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    appState.gameType = data.gameType || 'number';
+                    appState.gridSize = data.gridSize || 5;
+                    appState.freeSlot = data.freeSlot !== undefined ? data.freeSlot : true;
+                    appState.headerText = data.headerText || 'BINGO';
+                    appState.footerText = data.footerText || '';
+                    appState.fontFamily = data.fontFamily || 'Fredoka';
+                    appState.bgColor = data.bgColor || '#ffffff';
+                    appState.borderColor = data.borderColor || '#4f46e5';
+                    if (data.wordPool) appState.wordPool = data.wordPool;
+
+                    // Sync UI elements
+                    document.getElementById('game-type').value = appState.gameType;
+                    document.getElementById('grid-size').value = appState.gridSize;
+                    document.getElementById('free-slot-toggle').checked = appState.freeSlot;
+                    document.getElementById('header-text').value = appState.headerText;
+                    document.getElementById('footer-text').value = appState.footerText;
+                    document.getElementById('font-family').value = appState.fontFamily;
+                    document.getElementById('bg-color').value = appState.bgColor;
+                    document.getElementById('bg-color-text').value = appState.bgColor;
+                    document.getElementById('border-color').value = appState.borderColor;
+                    document.getElementById('border-color-text').value = appState.borderColor;
+                }
+            } catch (e) {
+                console.error("Failed to load local storage", e);
+            }
+        }
+    </script>
 </body>
 </html>
