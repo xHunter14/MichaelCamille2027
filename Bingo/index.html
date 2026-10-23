@@ -1,1155 +1,850 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo Card Creator - Personal Edition</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=Fredoka:wght@500;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Pacifico&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        outfit: ['Outfit', 'sans-serif'],
-                        rounded: ['Fredoka', 'sans-serif'],
-                        serif: ['Playfair Display', 'serif'],
-                        impact: ['Bebas Neue', 'sans-serif'],
-                        mono: ['Space Mono', 'monospace'],
-                        handwritten: ['Pacifico', 'cursive'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style id="dynamic-print-style">
-        @page {
-            size: letter portrait;
-            margin: 0.4in;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bingo Card Creator - Personal Edition</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #cbd5e1;
+      --header-bg: #4f46e5;
+      --header-text: #ffffff;
+      --subtitle-color: #64748b;
+      --cell-bg: #ffffff;
+      --cell-text: #1e293b;
+      --cell-border-color: #cbd5e1;
+      --cell-border-width: 2px;
+      --free-bg: #fef08a;
+      --free-text: #854d0e;
+      --footer-text-color: #64748b;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --cell-font-size: 1.5rem;
+    }
 
-        /* Strict Square Grid Cell rule */
-        .bingo-cell-square {
-            aspect-ratio: 1 / 1 !important;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-family);
+    }
 
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printable-area, #printable-area * {
-                visibility: visible;
-            }
-            #printable-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            .no-print {
-                display: none !important;
-            }
-            
-            .print-card-wrapper {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+    }
 
-            .print-layout-1 {
-                display: grid !important;
-                grid-template-columns: 1fr !important;
-                gap: 0 !important;
-            }
-            .print-layout-1 .print-card-wrapper {
-                page-break-after: always;
-                break-after: page;
-                height: 95vh;
-            }
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
 
-            .print-layout-2 {
-                display: grid !important;
-                grid-template-columns: 1fr !important;
-                gap: 20px !important;
-            }
-            .print-layout-2 .print-card-wrapper {
-                height: 46vh;
-            }
-            .print-layout-2 .print-card-wrapper:nth-child(2n) {
-                page-break-after: always;
-                break-after: page;
-            }
+    header.app-header {
+      background-color: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 
-            .print-layout-4 {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-                gap: 15px !important;
-            }
-            .print-layout-4 .print-card-wrapper {
-                height: 46vh;
-            }
-            .print-layout-4 .print-card-wrapper:nth-child(4n) {
-                page-break-after: always;
-                break-after: page;
-            }
+    header.app-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
 
-            .print-layout-6 {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-                gap: 10px !important;
-            }
-            .print-layout-6 .print-card-wrapper {
-                height: 30vh;
-            }
-            .print-layout-6 .print-card-wrapper:nth-child(6n) {
-                page-break-after: always;
-                break-after: page;
-            }
-        }
+    .main-content {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 1700px;
+      margin: 0 auto;
+      width: 100%;
+      flex-grow: 1;
+    }
 
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-    </style>
+    .sidebar {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 0.4rem;
+      margin-bottom: 0.75rem;
+      color: #334155;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    input[type="text"], input[type="number"], select, textarea {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      width: 100%;
+    }
+
+    input[type="color"] {
+      height: 38px;
+      padding: 2px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .row > * {
+      flex: 1;
+    }
+
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      padding: 0.65rem 1rem;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-success {
+      background-color: #10b981;
+    }
+
+    .btn-success:hover {
+      background-color: #059669;
+    }
+
+    .preview-area {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .cards-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    /* BINGO CARD DESIGN */
+    .bingo-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border: 3px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      overflow: hidden;
+    }
+
+    .bingo-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, var(--bg-opacity, 0));
+      z-index: 1;
+    }
+
+    .card-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+
+    .card-header-img {
+      max-height: 80px;
+      object-fit: contain;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+
+    .bingo-header-text {
+      background-color: var(--header-bg);
+      color: var(--header-text);
+      text-align: center;
+      font-size: 2.2rem;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 6px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    .bingo-subtitle-text {
+      text-align: center;
+      color: var(--subtitle-color);
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    .bingo-grid {
+      display: grid;
+      gap: 6px;
+      width: 100%;
+      margin: 8px 0;
+    }
+
+    /* SQUARE ASPECT RATIO CELL */
+    .bingo-cell {
+      aspect-ratio: 1 / 1;
+      background-color: var(--cell-bg);
+      color: var(--cell-text);
+      border: var(--cell-border-width) solid var(--cell-border-color);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 800;
+      font-size: var(--cell-font-size);
+      padding: 4px;
+      word-break: break-word;
+      hyphens: auto;
+      line-height: 1.1;
+    }
+
+    .bingo-cell.free-space {
+      background-color: var(--free-bg);
+      color: var(--free-text);
+      font-weight: 900;
+    }
+
+    .card-footer {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      color: var(--footer-text-color);
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      body {
+        background: white;
+      }
+      .sidebar, .app-header, .no-print {
+        display: none !important;
+      }
+      .main-content {
+        display: block;
+        padding: 0;
+        margin: 0;
+        max-width: none;
+      }
+      .preview-area {
+        padding: 0;
+        box-shadow: none;
+      }
+      .cards-wrapper {
+        display: grid !important;
+        gap: 15px;
+        width: 100%;
+      }
+      
+      .cards-wrapper.per-page-1 {
+        grid-template-columns: 1fr;
+      }
+      .cards-wrapper.per-page-1 .bingo-card {
+        page-break-after: always;
+        height: 95vh;
+        max-width: 100%;
+      }
+
+      .cards-wrapper.per-page-2 {
+        grid-template-columns: 1fr;
+      }
+      .cards-wrapper.per-page-2 .bingo-card {
+        max-width: 100%;
+        height: 46vh;
+      }
+      .cards-wrapper.per-page-2 .bingo-card:nth-child(2n) {
+        page-break-after: always;
+      }
+
+      .cards-wrapper.per-page-4 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .cards-wrapper.per-page-4 .bingo-card {
+        max-width: 100%;
+        height: 46vh;
+      }
+      .cards-wrapper.per-page-4 .bingo-card:nth-child(4n) {
+        page-break-after: always;
+      }
+
+      .cards-wrapper.per-page-6 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .cards-wrapper.per-page-6 .bingo-card {
+        max-width: 100%;
+        height: 30vh;
+      }
+      .cards-wrapper.per-page-6 .bingo-card:nth-child(6n) {
+        page-break-after: always;
+      }
+    }
+
+    @page {
+      margin: 0.5in;
+    }
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-full flex flex-col">
-
-    <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-medium pointer-events-none">
-        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
-        <span id="toast-message">Success!</span>
-    </div>
-
-    <!-- Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs no-print">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
-                    <i data-lucide="grid" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="font-outfit font-bold text-lg text-slate-900 leading-tight">BingoCardCreator</h1>
-                    <p class="text-xs text-slate-500 font-medium">Personal Edition • Square Cards & Full Customization</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <button onclick="app.resetAll()" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all flex items-center gap-1.5">
-                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
-                </button>
-                <button onclick="app.switchTab('preview')" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm shadow-indigo-200 transition-all flex items-center gap-1.5">
-                    <i data-lucide="eye" class="w-4 h-4"></i> Preview Cards
-                </button>
-            </div>
-        </div>
+<body>
+  <div class="app-container">
+    <header class="app-header no-print">
+      <h1>Bingo Card Creator (Personal Edition)</h1>
+      <div>
+        <button class="btn btn-success" onclick="window.print()">Print / Export PDF</button>
+      </div>
     </header>
 
-    <!-- Navigation Tabs -->
-    <nav class="bg-white border-b border-slate-200 no-print sticky top-16 z-20 shadow-2xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-8 overflow-x-auto">
-            <button onclick="app.switchTab('content')" id="nav-content" class="tab-btn py-3.5 px-3 border-b-2 font-semibold text-sm flex items-center gap-2 border-indigo-600 text-indigo-600 whitespace-nowrap">
-                <i data-lucide="file-text" class="w-4 h-4"></i> 1. Mode & Words
-            </button>
-            <button onclick="app.switchTab('design')" id="nav-design" class="tab-btn py-3.5 px-3 border-b-2 font-semibold text-sm flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">
-                <i data-lucide="palette" class="w-4 h-4"></i> 2. Colors, Fonts & Images
-            </button>
-            <button onclick="app.switchTab('preview')" id="nav-preview" class="tab-btn py-3.5 px-3 border-b-2 font-semibold text-sm flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">
-                <i data-lucide="layout-grid" class="w-4 h-4"></i> 3. Preview & Print
-            </button>
-            <button onclick="app.switchTab('caller')" id="nav-caller" class="tab-btn py-3.5 px-3 border-b-2 font-semibold text-sm flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">
-                <i data-lucide="list-checks" class="w-4 h-4"></i> 4. Caller's Sheet
-            </button>
+    <div class="main-content">
+      <!-- SIDEBAR CONTROLS -->
+      <aside class="sidebar no-print">
+        <!-- 1. Mode & Grid -->
+        <div class="control-section">
+          <div class="section-title">1. Content & Mode</div>
+          <div class="form-group">
+            <label for="cardMode">Bingo Mode</label>
+            <select id="cardMode" onchange="toggleMode()">
+              <option value="words">Custom Words/Phrases</option>
+              <option value="numbers">Traditional Numbers (B1-O75)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="gridSize">Grid Size</label>
+            <select id="gridSize" onchange="updateGridSize()">
+              <option value="5" selected>5x5 (Standard)</option>
+              <option value="4">4x4</option>
+              <option value="3">3x3</option>
+            </select>
+          </div>
+
+          <div id="wordsContainer" class="form-group">
+            <label for="wordList">Word List (One per line, min <span id="minWordsLabel">24</span> words)</label>
+            <textarea id="wordList" oninput="renderCards()">Apple
+Banana
+Cherry
+Date
+Elderberry
+Fig
+Grape
+Honeydew
+Kiwi
+Lemon
+Mango
+Nectarine
+Orange
+Papaya
+Quince
+Raspberry
+Strawberry
+Tangerine
+Ugli Fruit
+Vanilla
+Watermelon
+Xigua
+Yellow Squash
+Zucchini
+Blueberry
+Blackberry</textarea>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="freeSpaceCheck" checked onchange="renderCards()"> Include Free Space Center
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="freeSpaceText">Free Space Text</label>
+            <input type="text" id="freeSpaceText" value="FREE" oninput="renderCards()">
+          </div>
         </div>
-    </nav>
 
-    <!-- App Body -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        <!-- TAB 1: MODE & WORDS -->
-        <section id="tab-content" class="tab-pane space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Left: Mode and Word Input -->
-                <div class="lg:col-span-2 space-y-6">
-                    <div class="bg-white rounded-2xl p-6 shadow-xs border border-slate-200 space-y-4">
-                        <div>
-                            <h2 class="font-outfit font-bold text-lg text-slate-900">1. Select Bingo Mode</h2>
-                            <p class="text-xs text-slate-500">Choose between custom word lists or traditional number bingo.</p>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <button onclick="app.setBingoMode('words')" id="mode-btn-words" class="p-4 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 text-left transition-all">
-                                <div class="flex items-center gap-3 mb-1">
-                                    <div class="p-2 rounded-lg bg-indigo-600 text-white">
-                                        <i data-lucide="type" class="w-5 h-5"></i>
-                                    </div>
-                                    <span class="font-bold text-sm text-slate-900">Custom Words / Phrases</span>
-                                </div>
-                                <p class="text-xs text-slate-500 leading-relaxed">Enter customized words, names, or theme terms.</p>
-                            </button>
-                            <button onclick="app.setBingoMode('numbers')" id="mode-btn-numbers" class="p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 text-left transition-all">
-                                <div class="flex items-center gap-3 mb-1">
-                                    <div class="p-2 rounded-lg bg-slate-100 text-slate-700">
-                                        <i data-lucide="hash" class="w-5 h-5"></i>
-                                    </div>
-                                    <span class="font-bold text-sm text-slate-900">Traditional Numbers (B1-O75)</span>
-                                </div>
-                                <p class="text-xs text-slate-500 leading-relaxed">Standard number columns: B(1-15), I(16-30), N(31-45), G(46-60), O(61-75).</p>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="words-input-section" class="bg-white rounded-2xl p-6 shadow-xs border border-slate-200 space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h2 class="font-outfit font-bold text-lg text-slate-900">Word List / Phrases</h2>
-                                <p class="text-xs text-slate-500">Enter one phrase per line. Duplicate entries are automatically filtered.</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span id="word-count-badge" class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full">0 words</span>
-                                <span id="word-status-badge" class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full">Ready</span>
-                            </div>
-                        </div>
-
-                        <!-- Presets -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Theme Presets</label>
-                            <div class="flex flex-wrap gap-2">
-                                <button onclick="app.loadPreset('baby')" class="px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-lg text-xs font-semibold border border-pink-200">👶 Baby Shower</button>
-                                <button onclick="app.loadPreset('wedding')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold border border-rose-200">💍 Wedding</button>
-                                <button onclick="app.loadPreset('christmas')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-xs font-semibold border border-red-200">🎄 Holidays</button>
-                                <button onclick="app.loadPreset('school')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200">🏫 Classroom</button>
-                                <button onclick="app.loadPreset('corporate')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-semibold border border-amber-200">💼 Office</button>
-                            </div>
-                        </div>
-
-                        <textarea id="word-input" rows="10" oninput="app.handleWordInput(this.value)" class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm shadow-inner" placeholder="Enter words here, one per line..."></textarea>
-                        
-                        <div class="flex justify-between items-center text-xs text-slate-500">
-                            <span id="requirement-hint">Minimum required: 24 words for 5x5 grid</span>
-                            <button onclick="app.clearWords()" class="text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear List
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Grid Size & Text Settings -->
-                <div class="space-y-6">
-                    <div class="bg-white rounded-2xl p-6 shadow-xs border border-slate-200 space-y-5">
-                        <h2 class="font-outfit font-bold text-lg text-slate-900">Grid & Card Header</h2>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Header Title Text</label>
-                            <input type="text" id="card-title" value="BINGO" oninput="app.state.title = this.value" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-bold tracking-wider focus:ring-2 focus:ring-indigo-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Subtitle Instruction</label>
-                            <input type="text" id="card-subtitle" value="Mark items off as they are called!" oninput="app.state.subtitle = this.value" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Square Grid Size</label>
-                            <div class="grid grid-cols-3 gap-2">
-                                <button onclick="app.setGridSize(3)" id="grid-btn-3" class="grid-size-btn py-2.5 px-3 rounded-xl border border-slate-300 font-semibold text-xs text-slate-700 flex flex-col items-center gap-1">
-                                    <span class="text-sm font-bold">3 × 3</span>
-                                    <span class="text-[10px] text-slate-400">9 Squares</span>
-                                </button>
-                                <button onclick="app.setGridSize(4)" id="grid-btn-4" class="grid-size-btn py-2.5 px-3 rounded-xl border border-slate-300 font-semibold text-xs text-slate-700 flex flex-col items-center gap-1">
-                                    <span class="text-sm font-bold">4 × 4</span>
-                                    <span class="text-[10px] text-slate-400">16 Squares</span>
-                                </button>
-                                <button onclick="app.setGridSize(5)" id="grid-btn-5" class="grid-size-btn py-2.5 px-3 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold text-xs flex flex-col items-center gap-1 shadow-xs">
-                                    <span class="text-sm font-bold">5 × 5</span>
-                                    <span class="text-[10px] text-indigo-500">25 Squares</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="pt-2 border-t border-slate-100">
-                            <div class="flex items-center justify-between mb-3">
-                                <div>
-                                    <span class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Free Center Square</span>
-                                    <span class="text-xs text-slate-500">Include center free space</span>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="free-space-toggle" checked onchange="app.toggleFreeSpace(this.checked)" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                                </label>
-                            </div>
-                            <div id="free-text-container">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Free Space Label</label>
-                                <input type="text" id="free-text-input" value="FREE" oninput="app.state.freeSpaceText = this.value" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                        </div>
-
-                        <button onclick="app.switchTab('design')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2">
-                            Next: Colors & Typography <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 2: COLORS, TYPOGRAPHY & IMAGES -->
-        <section id="tab-design" class="tab-pane hidden space-y-6">
-            <div class="max-w-4xl mx-auto space-y-6">
-
-                <!-- Color Palettes & Preset Themes -->
-                <div class="bg-white rounded-2xl p-6 shadow-xs border border-slate-200 space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                            <h2 class="font-outfit font-bold text-xl text-slate-900">Color Palette & Preset Themes</h2>
-                            <p class="text-xs text-slate-500">Pick from pre-made color themes or customize each element individually.</p>
-                        </div>
-                    </div>
-
-                    <!-- Quick Theme Presets -->
-                    <div>
-                        <label class="font-semibold text-xs text-slate-600 uppercase tracking-wider block mb-3">Pre-made Themes</label>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                            <button onclick="app.applyTheme('indigo')" class="p-2.5 rounded-xl border-2 border-indigo-600 bg-indigo-50 flex flex-col items-center gap-1.5 transition-all hover:scale-105">
-                                <div class="w-6 h-6 rounded-full bg-indigo-600 border border-white shadow-xs"></div>
-                                <span class="text-xs font-bold text-indigo-900">Classic Navy</span>
-                            </button>
-                            <button onclick="app.applyTheme('teal')" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white flex flex-col items-center gap-1.5 transition-all hover:scale-105">
-                                <div class="w-6 h-6 rounded-full bg-teal-600 border border-white shadow-xs"></div>
-                                <span class="text-xs font-bold text-slate-700">Tropical Teal</span>
-                            </button>
-                            <button onclick="app.applyTheme('rose')" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white flex flex-col items-center gap-1.5 transition-all hover:scale-105">
-                                <div class="w-6 h-6 rounded-full bg-rose-500 border border-white shadow-xs"></div>
-                                <span class="text-xs font-bold text-slate-700">Retro Pastel</span>
-                            </button>
-                            <button onclick="app.applyTheme('amber')" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white flex flex-col items-center gap-1.5 transition-all hover:scale-105">
-                                <div class="w-6 h-6 rounded-full bg-amber-500 border border-white shadow-xs"></div>
-                                <span class="text-xs font-bold text-slate-700">Sunset Gold</span>
-                            </button>
-                            <button onclick="app.applyTheme('emerald')" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white flex flex-col items-center gap-1.5 transition-all hover:scale-105">
-                                <div class="w-6 h-6 rounded-full bg-emerald-700 border border-white shadow-xs"></div>
-                                <span class="text-xs font-bold text-slate-700">Holiday Green</span>
-                            </button>
-                            <button onclick="app.applyTheme('cyber')" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white flex flex-col items-center gap-1.5 transition-all hover:scale-105">
-                                <div class="w-6 h-6 rounded-full bg-purple-700 border border-white shadow-xs"></div>
-                                <span class="text-xs font-bold text-slate-700">Neon Purple</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Granular Color Pickers -->
-                    <div class="pt-4 border-t border-slate-100">
-                        <label class="font-semibold text-xs text-slate-600 uppercase tracking-wider block mb-3">Custom Colors</label>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Header Banner</label>
-                                <input type="color" id="color-header-bg" value="#4f46e5" onchange="app.state.colors.headerBg = this.value" class="w-full h-10 rounded-xl cursor-pointer border border-slate-200 p-1">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Header Text</label>
-                                <input type="color" id="color-header-text" value="#ffffff" onchange="app.state.colors.headerText = this.value" class="w-full h-10 rounded-xl cursor-pointer border border-slate-200 p-1">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Cell Background</label>
-                                <input type="color" id="color-cell-bg" value="#ffffff" onchange="app.state.colors.cellBg = this.value" class="w-full h-10 rounded-xl cursor-pointer border border-slate-200 p-1">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Cell Text</label>
-                                <input type="color" id="color-cell-text" value="#1e293b" onchange="app.state.colors.cellText = this.value" class="w-full h-10 rounded-xl cursor-pointer border border-slate-200 p-1">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Free Space Bg</label>
-                                <input type="color" id="color-free-bg" value="#fef08a" onchange="app.state.colors.freeBg = this.value" class="w-full h-10 rounded-xl cursor-pointer border border-slate-200 p-1">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Free Space Text</label>
-                                <input type="color" id="color-free-text" value="#854d0e" onchange="app.state.colors.freeText = this.value" class="w-full h-10 rounded-xl cursor-pointer border border-slate-200 p-1">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cell Borders -->
-                    <div class="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Cell Border Color</label>
-                            <input type="color" id="color-cell-border" value="#cbd5e1" onchange="app.state.colors.cellBorder = this.value" class="w-full h-10 rounded-xl cursor-pointer border border-slate-200 p-1">
-                        </div>
-                        <div>
-                            <div class="flex justify-between items-center mb-1.5">
-                                <label class="text-xs font-semibold text-slate-700">Grid Cell Border Width</label>
-                                <span id="border-width-val" class="text-xs font-bold text-indigo-600">2px</span>
-                            </div>
-                            <input type="range" min="1" max="6" step="1" value="2" id="border-width-slider" oninput="app.setBorderWidth(this.value)" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Typography Controls -->
-                <div class="bg-white rounded-2xl p-6 shadow-xs border border-slate-200 space-y-6">
-                    <h2 class="font-outfit font-bold text-lg text-slate-900">Typography Settings</h2>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <!-- Font Family Selection -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Font Family Style</label>
-                            <select id="font-family-select" onchange="app.setFontFamily(this.value)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500">
-                                <option value="sans" selected>Modern Sans-Serif (Inter)</option>
-                                <option value="rounded">Playful Rounded (Fredoka)</option>
-                                <option value="serif">Classic Elegant (Playfair)</option>
-                                <option value="impact">Bold Display (Bebas)</option>
-                                <option value="mono">Typewriter / Monospace (Space Mono)</option>
-                                <option value="handwritten">Cursive Script (Pacifico)</option>
-                            </select>
-                        </div>
-
-                        <!-- Cell Text Font Size Scale -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Square Cell Text Size</label>
-                            <div class="grid grid-cols-4 gap-2">
-                                <button onclick="app.setFontSize('sm')" id="font-size-sm" class="font-size-btn py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700">Small</button>
-                                <button onclick="app.setFontSize('md')" id="font-size-md" class="font-size-btn py-2 border border-indigo-600 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold shadow-xs">Medium</button>
-                                <button onclick="app.setFontSize('lg')" id="font-size-lg" class="font-size-btn py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700">Large</button>
-                                <button onclick="app.setFontSize('xl')" id="font-size-xl" class="font-size-btn py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700">X-Large</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Custom Header & Background Image Upload -->
-                <div class="bg-white rounded-2xl p-6 shadow-xs border border-slate-200 space-y-6">
-                    <div>
-                        <h2 class="font-outfit font-bold text-xl text-slate-900 mb-1">Custom Backgrounds & Logos</h2>
-                        <p class="text-xs text-slate-500">Upload header logo images or set custom page backgrounds.</p>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Custom Header Logo -->
-                        <div class="p-5 border-2 border-dashed border-slate-200 rounded-2xl hover:border-indigo-400 transition-all bg-slate-50/50 space-y-4">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <i data-lucide="image" class="w-5 h-5 text-indigo-600"></i>
-                                    <h3 class="font-bold text-sm text-slate-800">Header / Logo Image</h3>
-                                </div>
-                                <button id="remove-header-img-btn" onclick="app.removeHeaderImage()" class="hidden text-xs text-rose-600 font-semibold hover:underline">Remove</button>
-                            </div>
-                            <p class="text-xs text-slate-500">Replaces or displays above the card title banner.</p>
-
-                            <div id="header-img-preview-container" class="hidden w-full h-24 rounded-xl border border-slate-200 overflow-hidden bg-white flex items-center justify-center p-2">
-                                <img id="header-img-preview" src="" alt="Header Preview" class="max-h-full max-w-full object-contain">
-                            </div>
-
-                            <label class="block w-full py-2.5 px-4 bg-white hover:bg-slate-100 text-slate-700 text-center text-xs font-semibold rounded-xl border border-slate-300 cursor-pointer shadow-2xs">
-                                <i data-lucide="upload-cloud" class="w-4 h-4 inline-block mr-1.5 -mt-0.5"></i> Choose Header Image
-                                <input type="file" id="header-img-input" accept="image/*" class="hidden" onchange="app.handleHeaderImageUpload(this)">
-                            </label>
-                        </div>
-
-                        <!-- Custom Card Background Upload -->
-                        <div class="p-5 border-2 border-dashed border-slate-200 rounded-2xl hover:border-indigo-400 transition-all bg-slate-50/50 space-y-4">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <i data-lucide="wallpaper" class="w-5 h-5 text-indigo-600"></i>
-                                    <h3 class="font-bold text-sm text-slate-800">Card Background Image</h3>
-                                </div>
-                                <button id="remove-bg-img-btn" onclick="app.removeBgImage()" class="hidden text-xs text-rose-600 font-semibold hover:underline">Remove</button>
-                            </div>
-                            <p class="text-xs text-slate-500">Displays in the background of each card.</p>
-
-                            <div id="bg-img-preview-container" class="hidden w-full h-24 rounded-xl border border-slate-200 overflow-hidden bg-white flex items-center justify-center p-2">
-                                <img id="bg-img-preview" src="" alt="Background Preview" class="max-h-full max-w-full object-cover rounded-lg">
-                            </div>
-
-                            <label class="block w-full py-2.5 px-4 bg-white hover:bg-slate-100 text-slate-700 text-center text-xs font-semibold rounded-xl border border-slate-300 cursor-pointer shadow-2xs">
-                                <i data-lucide="upload-cloud" class="w-4 h-4 inline-block mr-1.5 -mt-0.5"></i> Choose Background Image
-                                <input type="file" id="bg-img-input" accept="image/*" class="hidden" onchange="app.handleBgImageUpload(this)">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Whitening Overlay -->
-                    <div id="bg-opacity-control" class="pt-4 border-t border-slate-100 space-y-2">
-                        <div class="flex justify-between items-center">
-                            <label class="text-xs font-semibold text-slate-700">Background Overlay Whitening / Fade</label>
-                            <span id="bg-opacity-val" class="text-xs font-bold text-indigo-600">80% Overlay</span>
-                        </div>
-                        <input type="range" min="0" max="1" step="0.05" value="0.8" id="bg-opacity-slider" oninput="app.setBgOpacity(this.value)" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-                    </div>
-                </div>
-
-                <!-- Bulk Print Options -->
-                <div class="bg-white rounded-2xl p-6 shadow-xs border border-slate-200 space-y-6">
-                    <h2 class="font-outfit font-bold text-lg text-slate-900">Bulk Generation & Paper Size</h2>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <div>
-                            <div class="flex justify-between items-center mb-1.5">
-                                <label class="font-semibold text-xs text-slate-700 uppercase tracking-wider">Unique Cards</label>
-                                <span id="card-count-val" class="font-bold text-xs text-indigo-600">10</span>
-                            </div>
-                            <input type="number" id="card-count-input" min="1" max="500" value="10" oninput="app.setCardCount(this.value)" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500">
-                        </div>
-
-                        <div>
-                            <label class="block font-semibold text-xs text-slate-700 uppercase tracking-wider mb-1.5">Cards Per Sheet</label>
-                            <select id="cards-per-page-select" onchange="app.setCardsPerPage(this.value)" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500">
-                                <option value="1">1 Card per page (Large)</option>
-                                <option value="2">2 Cards per page</option>
-                                <option value="4" selected>4 Cards per page (Standard)</option>
-                                <option value="6">6 Cards per page (Compact)</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block font-semibold text-xs text-slate-700 uppercase tracking-wider mb-1.5">Paper Size</label>
-                            <select id="paper-size-select" onchange="app.setPaperSize(this.value)" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500">
-                                <option value="letter" selected>Letter (8.5" x 11")</option>
-                                <option value="legal">Legal (8.5" x 14")</option>
-                                <option value="a4">A4 (210mm x 297mm)</option>
-                                <option value="a3">A3 (297mm x 420mm)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 flex items-center justify-between border-t border-slate-100">
-                        <button onclick="app.switchTab('content')" class="px-5 py-2.5 border border-slate-300 hover:bg-slate-50 rounded-xl text-sm font-semibold text-slate-700">Back</button>
-                        <button onclick="app.generateAndPreview()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-md shadow-indigo-200 flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i> Generate & Preview
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 3: PREVIEW & PRINT CARDS -->
-        <section id="tab-preview" class="tab-pane hidden space-y-6">
-            <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
-                <div class="flex items-center gap-3">
-                    <span id="preview-info" class="text-sm font-bold text-slate-800">Showing Card 1 of 10</span>
-                    <div id="single-nav-controls" class="flex items-center gap-1">
-                        <button onclick="app.prevCard()" class="p-2 border border-slate-300 hover:bg-slate-50 rounded-lg text-slate-700">
-                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="app.nextCard()" class="p-2 border border-slate-300 hover:bg-slate-50 rounded-lg text-slate-700">
-                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="app.toggleGridView()" id="grid-view-toggle-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                        <i data-lucide="layout-grid" class="w-4 h-4"></i> View All Cards
-                    </button>
-                    <button onclick="window.print()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-indigo-200 flex items-center gap-1.5">
-                        <i data-lucide="printer" class="w-4 h-4"></i> Print Cards
-                    </button>
-                </div>
-            </div>
-
-            <!-- Printable Preview Container -->
-            <div id="printable-area"></div>
-        </section>
-
-        <!-- TAB 4: CALLER SHEET -->
-        <section id="tab-caller" class="tab-pane hidden space-y-6">
-            <div class="max-w-4xl mx-auto bg-white rounded-2xl p-8 shadow-xs border border-slate-200 space-y-6">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h2 class="font-outfit font-bold text-xl text-slate-900">Master Caller's Checklist</h2>
-                        <p class="text-xs text-slate-500">Track called numbers or words live during gameplay.</p>
-                    </div>
-                    <div class="no-print flex items-center gap-2">
-                        <button onclick="app.shuffleCallerSheet()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                            <i data-lucide="shuffle" class="w-4 h-4"></i> Shuffle Items
-                        </button>
-                        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-indigo-200 flex items-center gap-1.5">
-                            <i data-lucide="printer" class="w-4 h-4"></i> Print Caller Sheet
-                        </button>
-                    </div>
-                </div>
-
-                <div id="caller-sheet-content" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 pt-4"></div>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="bg-white border-t border-slate-200 py-6 mt-auto no-print">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
-            Bingo Card Creator • Personal Edition • Square Grid & Unlimited Cards
+        <!-- 2. Header, Subtitle & Logo -->
+        <div class="control-section">
+          <div class="section-title">2. Header & Subtitle</div>
+          <div class="form-group">
+            <label for="headerText">Header Text</label>
+            <input type="text" id="headerText" value="BINGO" oninput="renderCards()">
+          </div>
+          <div class="form-group">
+            <label for="subtitleText">Subtitle / Tagline (Optional)</label>
+            <input type="text" id="subtitleText" value="Personal Game Night" oninput="renderCards()">
+          </div>
+          <div class="form-group">
+            <label for="headerImgInput">Upload Custom Header/Logo</label>
+            <input type="file" id="headerImgInput" accept="image/*" onchange="handleHeaderImage(this)">
+          </div>
         </div>
-    </footer>
 
-    <script>
-        const PRESETS = {
-            baby: ["Pacifier", "Stroller", "Diaper Cake", "Rattle", "Onesie", "Baby Bottle", "Crib", "Teething Ring", "Bib", "Booties", "Wipes", "Baby Powder", "Blanket", "Bath Tub", "Lotion", "Teddy Bear", "Mobile", "Pacifier Clip", "Car Seat", "Socks", "Burp Cloth", "High Chair", "Baby Oil", "Nursery", "Stuffed Animal"],
-            wedding: ["Bouquet", "Champagne", "First Dance", "Garter", "Veil", "Tuxedo", "Catering", "DJ", "Photographer", "Centerpiece", "Bridesmaid", "Groomsman", "Ring Bearer", "Flower Girl", "Toast", "Boutonniere", "Wedding Cake", "Unity Candle", "Vows", "Honeymoon", "Guestbook", "Favors", "Open Bar", "Confetti", "Something Blue"],
-            christmas: ["Santa Claus", "Reindeer", "Stocking", "Candy Cane", "Mistletoe", "Snowflake", "Ornament", "Gingerbread", "Elf", "Wreath", "Hot Cocoa", "Fireplace", "Sleigh", "North Pole", "Present", "Tinsel", "Carols", "Yule Log", "Nutcracker", "Polar Bear", "Snowman", "Star", "Bell", "Pajamas", "Eggnog"],
-            school: ["Pencil", "Notebook", "Eraser", "Whiteboard", "Backpack", "Recess", "Homework", "Calculator", "Textbook", "Crayons", "Ruler", "Scissors", "Glue", "Principal", "Teacher", "Classroom", "Bus", "Lunchbox", "Library", "Globe", "Science", "History", "Math", "Art", "Gym"],
-            corporate: ["Synergy", "Pivot", "Bandwidth", "Deep Dive", "Circle Back", "Action Item", "Low-Hanging Fruit", "Scalable", "Disrupt", "KPI", "Deliverable", "Touchbase", "Offline", "ROI", "Core Competency", "Thought Leader", "Boilerplate", "Agile", "Ecosystem", "Alignment", "Leverage", "Optimization", "Paradigm", "Holistic", "Wheelhouse"]
+        <!-- 3. Typography & Text Sizes -->
+        <div class="control-section">
+          <div class="section-title">3. Font & Cell Text Sizes</div>
+          <div class="form-group">
+            <label for="fontFamily">Font Style</label>
+            <select id="fontFamily" onchange="updateTypography()">
+              <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>Modern Sans-Serif</option>
+              <option value='"Arial Black", Impact, sans-serif'>Heavy Bold Impact</option>
+              <option value='"Comic Sans MS", "Chalkboard SE", cursive'>Playful / Comic</option>
+              <option value='Georgia, "Times New Roman", serif'>Classic Serif</option>
+              <option value='"Courier New", monospace'>Clean Monospace</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="fontSizePreset">Cell Font Size Preset</label>
+            <select id="fontSizePreset" onchange="handleFontSizePreset(this)">
+              <option value="1rem">Small (16px)</option>
+              <option value="1.25rem">Medium (20px)</option>
+              <option value="1.5rem">Large (24px)</option>
+              <option value="2rem">XL (32px)</option>
+              <option value="2.5rem" selected>2XL (40px)</option>
+              <option value="3rem">3XL (48px)</option>
+              <option value="3.5rem">4XL (56px)</option>
+              <option value="4rem">5XL (64px - Giant Numbers)</option>
+              <option value="custom">Custom Size Slider...</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="customPxSliderGroup" style="display: none;">
+            <label for="customPxSlider">Custom Text Size: <span id="pxValueDisplay">40</span>px</label>
+            <input type="range" id="customPxSlider" min="12" max="72" value="40" oninput="handleCustomPxSlider(this.value)">
+          </div>
+        </div>
+
+        <!-- 4. Colors & Background -->
+        <div class="control-section">
+          <div class="section-title">4. Colors & Background</div>
+          <div class="form-group">
+            <label for="bgImgInput">Upload Background Image</label>
+            <input type="file" id="bgImgInput" accept="image/*" onchange="handleBgImage(this)">
+          </div>
+          <div class="form-group">
+            <label for="bgOpacity">Background Whitening / Overlay</label>
+            <input type="range" id="bgOpacity" min="0" max="0.9" step="0.1" value="0.2" oninput="renderCards()">
+          </div>
+
+          <div class="row">
+            <div class="form-group">
+              <label for="headerBgColor">Header Bg</label>
+              <input type="color" id="headerBgColor" value="#4f46e5" onchange="renderCards()">
+            </div>
+            <div class="form-group">
+              <label for="headerTextColor">Header Text</label>
+              <input type="color" id="headerTextColor" value="#ffffff" onchange="renderCards()">
+            </div>
+            <div class="form-group">
+              <label for="subtitleColor">Subtitle Text</label>
+              <input type="color" id="subtitleColor" value="#64748b" onchange="renderCards()">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="form-group">
+              <label for="cellBgColor">Cell Bg</label>
+              <input type="color" id="cellBgColor" value="#ffffff" onchange="renderCards()">
+            </div>
+            <div class="form-group">
+              <label for="cellTextColor">Cell Text</label>
+              <input type="color" id="cellTextColor" value="#1e293b" onchange="renderCards()">
+            </div>
+            <div class="form-group">
+              <label for="cellBorderColor">Cell Border</label>
+              <input type="color" id="cellBorderColor" value="#cbd5e1" onchange="renderCards()">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="form-group">
+              <label for="freeBgColor">Free Space Bg</label>
+              <input type="color" id="freeBgColor" value="#fef08a" onchange="renderCards()">
+            </div>
+            <div class="form-group">
+              <label for="freeTextColor">Free Space Text</label>
+              <input type="color" id="freeTextColor" value="#854d0e" onchange="renderCards()">
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Footer Settings -->
+        <div class="control-section">
+          <div class="section-title">5. Footer Customization</div>
+          <div class="form-group">
+            <label for="footerMode">Footer Mode</label>
+            <select id="footerMode" onchange="renderCards()">
+              <option value="cardNum" selected>Card Number Only (Card #1)</option>
+              <option value="customText">Custom Text Only</option>
+              <option value="both">Card Number + Custom Text</option>
+              <option value="none">Hide Footer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="customFooterText">Custom Footer Text</label>
+            <input type="text" id="customFooterText" value="Enjoy the Game!" oninput="renderCards()">
+          </div>
+          <div class="form-group">
+            <label for="footerTextColor">Footer Text Color</label>
+            <input type="color" id="footerTextColor" value="#64748b" onchange="renderCards()">
+          </div>
+        </div>
+
+        <!-- 6. Print & Layout Options -->
+        <div class="control-section">
+          <div class="section-title">6. Print & Bulk Options</div>
+          <div class="form-group">
+            <label for="cardCount">Number of Cards (1–500)</label>
+            <input type="number" id="cardCount" min="1" max="500" value="4" onchange="renderCards()">
+          </div>
+
+          <div class="form-group">
+            <label for="cardsPerPage">Cards Per Page (Layout)</label>
+            <select id="cardsPerPage" onchange="updatePageLayout()">
+              <option value="1">1 Card per page</option>
+              <option value="2">2 Cards per page</option>
+              <option value="4" selected>4 Cards per page</option>
+              <option value="6">6 Cards per page</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="paperSize">Paper Size</label>
+            <select id="paperSize" onchange="updatePaperSize()">
+              <option value="letter">Letter (8.5" x 11")</option>
+              <option value="legal">Legal (8.5" x 14")</option>
+              <option value="a4">A4 (210mm x 297mm)</option>
+              <option value="a3">A3 (297mm x 420mm)</option>
+            </select>
+          </div>
+        </div>
+      </aside>
+
+      <!-- PREVIEW & CARDS RENDER AREA -->
+      <main class="preview-area">
+        <div id="cardsWrapper" class="cards-wrapper per-page-4"></div>
+      </main>
+    </div>
+  </div>
+
+  <style id="dynamicPageStyle">
+    @page { size: letter; }
+  </style>
+
+  <script>
+    let uploadedHeaderImg = null;
+    let uploadedBgImg = null;
+
+    function toggleMode() {
+      const mode = document.getElementById('cardMode').value;
+      const wordsContainer = document.getElementById('wordsContainer');
+      if (mode === 'numbers') {
+        wordsContainer.style.display = 'none';
+        document.getElementById('headerText').value = 'BINGO';
+      } else {
+        wordsContainer.style.display = 'flex';
+      }
+      renderCards();
+    }
+
+    function updateGridSize() {
+      const size = parseInt(document.getElementById('gridSize').value);
+      document.getElementById('minWordsLabel').innerText = (size * size) - 1;
+      renderCards();
+    }
+
+    function updateTypography() {
+      const font = document.getElementById('fontFamily').value;
+      document.documentElement.style.setProperty('--font-family', font);
+      renderCards();
+    }
+
+    function handleFontSizePreset(selectEl) {
+      const sliderGroup = document.getElementById('customPxSliderGroup');
+      if (selectEl.value === 'custom') {
+        sliderGroup.style.display = 'flex';
+        const customPx = document.getElementById('customPxSlider').value;
+        document.documentElement.style.setProperty('--cell-font-size', customPx + 'px');
+      } else {
+        sliderGroup.style.display = 'none';
+        document.documentElement.style.setProperty('--cell-font-size', selectEl.value);
+      }
+      renderCards();
+    }
+
+    function handleCustomPxSlider(val) {
+      document.getElementById('pxValueDisplay').innerText = val;
+      document.documentElement.style.setProperty('--cell-font-size', val + 'px');
+      renderCards();
+    }
+
+    function handleHeaderImage(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          uploadedHeaderImg = e.target.result;
+          renderCards();
         };
-
-        class BingoApp {
-            constructor() {
-                this.state = {
-                    mode: 'words',
-                    words: [],
-                    gridSize: 5,
-                    hasFreeSpace: true,
-                    freeSpaceText: "FREE",
-                    title: "BINGO",
-                    subtitle: "Mark items off as they are called!",
-                    cardCount: 10,
-                    cardsPerPage: "4",
-                    paperSize: "letter",
-                    headerImg: null,
-                    bgImg: null,
-                    bgOpacity: 0.8,
-                    fontFamily: 'sans',
-                    fontSize: 'md',
-                    colors: {
-                        headerBg: '#4f46e5',
-                        headerText: '#ffffff',
-                        cellBg: '#ffffff',
-                        cellText: '#1e293b',
-                        cellBorder: '#cbd5e1',
-                        borderWidth: 2,
-                        freeBg: '#fef08a',
-                        freeText: '#854d0e'
-                    },
-                    currentCardIndex: 0,
-                    isGridView: false,
-                    generatedCards: [],
-                    callerSheetItems: []
-                };
-
-                this.init();
-            }
-
-            init() {
-                this.loadPreset('baby');
-                lucide.createIcons();
-            }
-
-            showToast(message) {
-                const toast = document.getElementById('toast');
-                document.getElementById('toast-message').innerText = message;
-                toast.classList.remove('translate-y-20', 'opacity-0');
-                setTimeout(() => {
-                    toast.classList.add('translate-y-20', 'opacity-0');
-                }, 3000);
-            }
-
-            switchTab(tabId) {
-                document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
-                document.querySelectorAll('.tab-btn').forEach(el => {
-                    el.classList.remove('border-indigo-600', 'text-indigo-600');
-                    el.classList.add('border-transparent', 'text-slate-500');
-                });
-
-                document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-                const navBtn = document.getElementById(`nav-${tabId}`);
-                if (navBtn) {
-                    navBtn.classList.remove('border-transparent', 'text-slate-500');
-                    navBtn.classList.add('border-indigo-600', 'text-indigo-600');
-                }
-
-                if (tabId === 'preview') {
-                    this.generateCards();
-                    this.renderPreview();
-                } else if (tabId === 'caller') {
-                    this.renderCallerSheet();
-                }
-
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                lucide.createIcons();
-            }
-
-            setBingoMode(mode) {
-                this.state.mode = mode;
-                const wordsBtn = document.getElementById('mode-btn-words');
-                const numbersBtn = document.getElementById('mode-btn-numbers');
-                const wordsSection = document.getElementById('words-input-section');
-
-                if (mode === 'words') {
-                    wordsBtn.className = "p-4 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 text-left transition-all";
-                    numbersBtn.className = "p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 text-left transition-all";
-                    wordsSection.classList.remove('hidden');
-                } else {
-                    numbersBtn.className = "p-4 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 text-left transition-all";
-                    wordsBtn.className = "p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 text-left transition-all";
-                    wordsSection.classList.add('hidden');
-                }
-            }
-
-            loadPreset(presetKey) {
-                const wordsList = PRESETS[presetKey] || [];
-                const textarea = document.getElementById('word-input');
-                textarea.value = wordsList.join('\n');
-                this.handleWordInput(textarea.value);
-            }
-
-            handleWordInput(text) {
-                const lines = text.split('\n').map(w => w.trim()).filter(w => w.length > 0);
-                this.state.words = [...new Set(lines)];
-                
-                const count = this.state.words.length;
-                document.getElementById('word-count-badge').innerText = `${count} words`;
-
-                const required = (this.state.gridSize * this.state.gridSize) - (this.state.hasFreeSpace ? 1 : 0);
-                const statusBadge = document.getElementById('word-status-badge');
-                document.getElementById('requirement-hint').innerText = `Minimum required: ${required} words for ${this.state.gridSize}x${this.state.gridSize} grid`;
-
-                if (count >= required) {
-                    statusBadge.className = "px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full";
-                    statusBadge.innerText = `Ready (${count} words)`;
-                } else {
-                    statusBadge.className = "px-3 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-full";
-                    statusBadge.innerText = `Need ${required - count} more words`;
-                }
-            }
-
-            clearWords() {
-                document.getElementById('word-input').value = '';
-                this.handleWordInput('');
-                this.showToast("Word list cleared.");
-            }
-
-            setGridSize(size) {
-                this.state.gridSize = size;
-                document.querySelectorAll('.grid-size-btn').forEach(btn => {
-                    btn.className = "grid-size-btn py-2.5 px-3 rounded-xl border border-slate-300 font-semibold text-xs text-slate-700 flex flex-col items-center gap-1";
-                });
-                const activeBtn = document.getElementById(`grid-btn-${size}`);
-                activeBtn.className = "grid-size-btn py-2.5 px-3 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold text-xs flex flex-col items-center gap-1 shadow-xs";
-                
-                this.handleWordInput(document.getElementById('word-input').value);
-            }
-
-            toggleFreeSpace(checked) {
-                this.state.hasFreeSpace = checked;
-                const container = document.getElementById('free-text-container');
-                if (checked) {
-                    container.classList.remove('opacity-50', 'pointer-events-none');
-                } else {
-                    container.classList.add('opacity-50', 'pointer-events-none');
-                }
-                this.handleWordInput(document.getElementById('word-input').value);
-            }
-
-            handleHeaderImageUpload(input) {
-                if (input.files && input.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        this.state.headerImg = e.target.result;
-                        document.getElementById('header-img-preview').src = e.target.result;
-                        document.getElementById('header-img-preview-container').classList.remove('hidden');
-                        document.getElementById('remove-header-img-btn').classList.remove('hidden');
-                        this.showToast("Header logo uploaded!");
-                    };
-                    reader.readAsDataURL(input.files[0]);
-                }
-            }
-
-            removeHeaderImage() {
-                this.state.headerImg = null;
-                document.getElementById('header-img-input').value = '';
-                document.getElementById('header-img-preview-container').classList.add('hidden');
-                document.getElementById('remove-header-img-btn').classList.add('hidden');
-                this.showToast("Header image removed.");
-            }
-
-            handleBgImageUpload(input) {
-                if (input.files && input.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        this.state.bgImg = e.target.result;
-                        document.getElementById('bg-img-preview').src = e.target.result;
-                        document.getElementById('bg-img-preview-container').classList.remove('hidden');
-                        document.getElementById('remove-bg-img-btn').classList.remove('hidden');
-                        this.showToast("Background image uploaded!");
-                    };
-                    reader.readAsDataURL(input.files[0]);
-                }
-            }
-
-            removeBgImage() {
-                this.state.bgImg = null;
-                document.getElementById('bg-img-input').value = '';
-                document.getElementById('bg-img-preview-container').classList.add('hidden');
-                document.getElementById('remove-bg-img-btn').classList.add('hidden');
-                this.showToast("Background image removed.");
-            }
-
-            setBgOpacity(val) {
-                this.state.bgOpacity = parseFloat(val);
-                document.getElementById('bg-opacity-val').innerText = `${Math.round(val * 100)}% Overlay`;
-            }
-
-            setBorderWidth(val) {
-                this.state.colors.borderWidth = parseInt(val);
-                document.getElementById('border-width-val').innerText = `${val}px`;
-            }
-
-            setFontFamily(family) {
-                this.state.fontFamily = family;
-            }
-
-            setFontSize(size) {
-                this.state.fontSize = size;
-                document.querySelectorAll('.font-size-btn').forEach(btn => {
-                    btn.className = "font-size-btn py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700";
-                });
-                const activeBtn = document.getElementById(`font-size-${size}`);
-                activeBtn.className = "font-size-btn py-2 border border-indigo-600 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold shadow-xs";
-            }
-
-            applyTheme(themeKey) {
-                const themes = {
-                    indigo: { headerBg: '#4f46e5', headerText: '#ffffff', cellBg: '#ffffff', cellText: '#1e293b', cellBorder: '#cbd5e1', freeBg: '#fef08a', freeText: '#854d0e' },
-                    teal: { headerBg: '#0d9488', headerText: '#ffffff', cellBg: '#f0fdf4', cellText: '#134e4a', cellBorder: '#99f6e4', freeBg: '#ccfbf1', freeText: '#0f766e' },
-                    rose: { headerBg: '#f43f5e', headerText: '#ffffff', cellBg: '#fff1f2', cellText: '#881337', cellBorder: '#fecdd3', freeBg: '#ffe4e6', freeText: '#9f1239' },
-                    amber: { headerBg: '#f59e0b', headerText: '#ffffff', cellBg: '#fffbeb', cellText: '#78350f', cellBorder: '#fde68a', freeBg: '#fef3c7', freeText: '#92400e' },
-                    emerald: { headerBg: '#047857', headerText: '#ffffff', cellBg: '#ffffff', cellText: '#064e3b', cellBorder: '#a7f3d0', freeBg: '#d1fae5', freeText: '#065f46' },
-                    cyber: { headerBg: '#7e22ce', headerText: '#ffffff', cellBg: '#1e1b4b', cellText: '#f3e8ff', cellBorder: '#a855f7', freeBg: '#c084fc', freeText: '#3b0764' }
-                };
-
-                const t = themes[themeKey];
-                if (t) {
-                    this.state.colors = { ...this.state.colors, ...t };
-                    document.getElementById('color-header-bg').value = t.headerBg;
-                    document.getElementById('color-header-text').value = t.headerText;
-                    document.getElementById('color-cell-bg').value = t.cellBg;
-                    document.getElementById('color-cell-text').value = t.cellText;
-                    document.getElementById('color-cell-border').value = t.cellBorder;
-                    document.getElementById('color-free-bg').value = t.freeBg;
-                    document.getElementById('color-free-text').value = t.freeText;
-                    this.showToast(`Applied theme!`);
-                }
-            }
-
-            setCardCount(val) {
-                const num = Math.min(500, Math.max(1, parseInt(val) || 1));
-                this.state.cardCount = num;
-                document.getElementById('card-count-val').innerText = num;
-            }
-
-            setCardsPerPage(val) {
-                this.state.cardsPerPage = val;
-            }
-
-            setPaperSize(val) {
-                this.state.paperSize = val;
-                const styleEl = document.getElementById('dynamic-print-style');
-                styleEl.innerHTML = `
-                    @page {
-                        size: ${val} portrait;
-                        margin: 0.4in;
-                    }
-                    .bingo-cell-square {
-                        aspect-ratio: 1 / 1 !important;
-                    }
-                ` + styleEl.innerHTML.substring(styleEl.innerHTML.indexOf('@media print'));
-            }
-
-            generateCards() {
-                const { mode, words, gridSize, hasFreeSpace, cardCount } = this.state;
-                const totalSquares = gridSize * gridSize;
-                const center = Math.floor(gridSize / 2);
-
-                this.state.generatedCards = [];
-                this.state.callerSheetItems = [];
-
-                if (mode === 'numbers') {
-                    const ranges = [[1,15], [16,30], [31,45], [46,60], [61,75]];
-                    let fullNumberList = [];
-                    const prefix = ['B', 'I', 'N', 'G', 'O'];
-                    for(let c=0; c<5; c++) {
-                        for(let n=ranges[c][0]; n<=ranges[c][1]; n++) {
-                            fullNumberList.push(`${prefix[c]}${n}`);
-                        }
-                    }
-                    this.state.callerSheetItems = fullNumberList;
-
-                    for (let c = 0; c < cardCount; c++) {
-                        let grid = [];
-                        let colPools = [];
-
-                        for (let col = 0; col < 5; col++) {
-                            let pool = [];
-                            for (let n = ranges[col][0]; n <= ranges[col][1]; n++) pool.push(n);
-                            pool.sort(() => Math.random() - 0.5);
-                            colPools.push(pool.slice(0, 5));
-                        }
-
-                        for (let r = 0; r < 5; r++) {
-                            let row = [];
-                            for (let col = 0; col < 5; col++) {
-                                if (hasFreeSpace && r === 2 && col === 2) {
-                                    row.push({ text: this.state.freeSpaceText, isFree: true });
-                                } else {
-                                    row.push({ text: colPools[col][r], isFree: false });
-                                }
-                            }
-                            grid.push(row);
-                        }
-                        this.state.generatedCards.push(grid);
-                    }
-                } else {
-                    if (words.length === 0) {
-                        this.showToast("Please enter words first!");
-                        this.switchTab('content');
-                        return;
-                    }
-
-                    const wordsNeeded = totalSquares - (hasFreeSpace ? 1 : 0);
-                    this.state.callerSheetItems = [...words];
-
-                    for (let c = 0; c < cardCount; c++) {
-                        let pool = [...words];
-                        while (pool.length < wordsNeeded) pool = pool.concat(words);
-                        pool.sort(() => Math.random() - 0.5);
-
-                        const cardWords = pool.slice(0, wordsNeeded);
-                        let grid = [];
-                        let wordIdx = 0;
-
-                        for (let r = 0; r < gridSize; r++) {
-                            let row = [];
-                            for (let col = 0; col < gridSize; col++) {
-                                if (hasFreeSpace && r === center && col === center) {
-                                    row.push({ text: this.state.freeSpaceText, isFree: true });
-                                } else {
-                                    row.push({ text: cardWords[wordIdx++], isFree: false });
-                                }
-                            }
-                            grid.push(row);
-                        }
-                        this.state.generatedCards.push(grid);
-                    }
-                }
-
-                this.currentCardIndex = 0;
-            }
-
-            generateAndPreview() {
-                this.generateCards();
-                this.switchTab('preview');
-                this.showToast(`Generated ${this.state.cardCount} square cards!`);
-            }
-
-            renderPreview() {
-                const container = document.getElementById('printable-area');
-                container.innerHTML = '';
-                container.className = `print-layout-${this.state.cardsPerPage} space-y-6 sm:space-y-8`;
-
-                const navControls = document.getElementById('single-nav-controls');
-
-                if (this.state.isGridView) {
-                    navControls.classList.add('hidden');
-                    this.state.generatedCards.forEach((grid, idx) => {
-                        const cardWrapper = document.createElement('div');
-                        cardWrapper.className = `print-card-wrapper bg-white rounded-2xl p-5 shadow-xs border border-slate-200 max-w-2xl mx-auto`;
-                        cardWrapper.innerHTML = this.buildCardHTML(grid, idx + 1);
-                        container.appendChild(cardWrapper);
-                    });
-                    document.getElementById('preview-info').innerText = `Overview of all ${this.state.generatedCards.length} cards`;
-                } else {
-                    navControls.classList.remove('hidden');
-                    const idx = this.state.currentCardIndex;
-                    const grid = this.state.generatedCards[idx];
-                    if (!grid) return;
-
-                    const cardWrapper = document.createElement('div');
-                    cardWrapper.className = `print-card-wrapper bg-white rounded-2xl p-6 shadow-xs border border-slate-200 max-w-2xl mx-auto`;
-                    cardWrapper.innerHTML = this.buildCardHTML(grid, idx + 1);
-                    container.appendChild(cardWrapper);
-
-                    document.getElementById('preview-info').innerText = `Card ${idx + 1} of ${this.state.generatedCards.length}`;
-                }
-                lucide.createIcons();
-            }
-
-            buildCardHTML(grid, cardNum) {
-                const size = this.state.gridSize;
-                const { colors, bgImg, bgOpacity, headerImg, title, subtitle, fontFamily, fontSize } = this.state;
-
-                const fontClassMap = {
-                    sans: 'font-sans',
-                    rounded: 'font-rounded',
-                    serif: 'font-serif',
-                    impact: 'font-impact',
-                    mono: 'font-mono',
-                    handwritten: 'font-handwritten'
-                };
-                const fontClass = fontClassMap[fontFamily] || 'font-sans';
-
-                const fontSizeMap = {
-                    sm: 'text-[10px] sm:text-xs',
-                    md: 'text-xs sm:text-sm',
-                    lg: 'text-sm sm:text-base',
-                    xl: 'text-base sm:text-lg'
-                };
-                const textSizeClass = fontSizeMap[fontSize] || 'text-xs sm:text-sm';
-
-                let gridColsClass = size === 3 ? 'grid-cols-3' : (size === 4 ? 'grid-cols-4' : 'grid-cols-5');
-
-                let cellsHTML = '';
-                grid.forEach(row => {
-                    row.forEach(cell => {
-                        if (cell.isFree) {
-                            cellsHTML += `
-                                <div style="background-color: ${colors.freeBg}; color: ${colors.freeText}; border-color: ${colors.cellBorder}; border-width: ${colors.borderWidth}px;" class="bingo-cell-square p-2 rounded-xl flex items-center justify-center text-center font-extrabold shadow-inner select-none ${textSizeClass} ${fontClass}">
-                                    <span class="leading-tight break-words">${cell.text}</span>
-                                </div>
-                            `;
-                        } else {
-                            cellsHTML += `
-                                <div style="background-color: ${colors.cellBg}; color: ${colors.cellText}; border-color: ${colors.cellBorder}; border-width: ${colors.borderWidth}px;" class="bingo-cell-square p-2 rounded-xl flex items-center justify-center text-center font-bold shadow-2xs select-none ${textSizeClass} ${fontClass}">
-                                    <span class="leading-tight break-words line-clamp-3">${cell.text}</span>
-                                </div>
-                            `;
-                        }
-                    });
-                });
-
-                const bgStyle = bgImg ? `background-image: url('${bgImg}'); background-size: cover; background-position: center;` : '';
-                const overlayStyle = bgImg ? `background-color: rgba(255, 255, 255, ${bgOpacity});` : '';
-
-                return `
-                    <div style="${bgStyle}" class="relative rounded-xl p-4 sm:p-6 overflow-hidden flex flex-col justify-between">
-                        <div style="${overlayStyle}" class="absolute inset-0 z-0"></div>
-
-                        <div class="relative z-10 flex flex-col h-full justify-between space-y-4">
-                            <!-- Card Top Title Header -->
-                            <div class="w-full text-center">
-                                <div class="flex justify-between items-center mb-1.5">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bingo Card</span>
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">#${cardNum}</span>
-                                </div>
-
-                                ${headerImg ? `<img src="${headerImg}" class="max-h-16 mx-auto mb-2 object-contain" alt="Header Logo">` : ''}
-
-                                <div style="background-color: ${colors.headerBg}; color: ${colors.headerText};" class="py-2.5 px-4 rounded-xl font-black text-xl sm:text-2xl text-center tracking-widest uppercase shadow-xs ${fontClass}">
-                                    ${title}
-                                </div>
-                                ${subtitle ? `<p class="text-xs text-slate-600 font-medium mt-1">${subtitle}</p>` : ''}
-                            </div>
-
-                            <!-- Standard B-I-N-G-O Headers for 5x5 -->
-                            ${size === 5 ? `
-                                <div class="w-full grid grid-cols-5 gap-2">
-                                    ${['B','I','N','G','O'].map(l => `
-                                        <div style="background-color: ${colors.headerBg}; color: ${colors.headerText}; opacity: 0.9;" class="py-1 rounded-lg font-extrabold text-center text-xs shadow-2xs ${fontClass}">${l}</div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-
-                            <!-- Strict 1:1 Square Grid -->
-                            <div class="w-full grid ${gridColsClass} gap-2">
-                                ${cellsHTML}
-                            </div>
-
-                            <!-- Footer -->
-                            <div class="w-full pt-2 border-t border-slate-200/60 flex justify-between items-center text-[10px] text-slate-400">
-                                <span>BingoCardCreator • Personal Edition</span>
-                                <span>Card ID: #${Math.floor(100000 + Math.random() * 900000)}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            prevCard() {
-                if (this.state.isGridView) return;
-                if (this.state.currentCardIndex > 0) {
-                    this.state.currentCardIndex--;
-                    this.renderPreview();
-                }
-            }
-
-            nextCard() {
-                if (this.state.isGridView) return;
-                if (this.state.currentCardIndex < this.state.generatedCards.length - 1) {
-                    this.state.currentCardIndex++;
-                    this.renderPreview();
-                }
-            }
-
-            toggleGridView() {
-                this.state.isGridView = !this.state.isGridView;
-                const btn = document.getElementById('grid-view-toggle-btn');
-                if (this.state.isGridView) {
-                    btn.className = "px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm";
-                    btn.innerHTML = `<i data-lucide="square" class="w-4 h-4"></i> Single View`;
-                } else {
-                    btn.className = "px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5";
-                    btn.innerHTML = `<i data-lucide="layout-grid" class="w-4 h-4"></i> View All Cards`;
-                }
-                this.renderPreview();
-            }
-
-            renderCallerSheet() {
-                const container = document.getElementById('caller-sheet-content');
-                container.innerHTML = '';
-
-                if (this.state.callerSheetItems.length === 0) {
-                    this.generateCards();
-                }
-
-                this.state.callerSheetItems.forEach((item, idx) => {
-                    const box = document.createElement('div');
-                    box.className = "flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 cursor-pointer select-none";
-                    box.innerHTML = `
-                        <div class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
-                            ${idx + 1}
-                        </div>
-                        <span class="font-medium text-xs text-slate-800 truncate">${item}</span>
-                    `;
-                    box.onclick = () => {
-                        box.classList.toggle('bg-emerald-50');
-                        box.classList.toggle('border-emerald-300');
-                        box.querySelector('div').classList.toggle('bg-emerald-600');
-                        box.querySelector('div').classList.toggle('text-white');
-                    };
-                    container.appendChild(box);
-                });
-            }
-
-            shuffleCallerSheet() {
-                this.state.callerSheetItems.sort(() => 0.5 - Math.random());
-                this.renderCallerSheet();
-                this.showToast("Caller list shuffled!");
-            }
-
-            resetAll() {
-                if (confirm("Reset all settings and cards?")) {
-                    this.loadPreset('baby');
-                    this.state.cardCount = 10;
-                    this.state.headerImg = null;
-                    this.state.bgImg = null;
-                    document.getElementById('card-count-input').value = 10;
-                    document.getElementById('card-count-val').innerText = '10';
-                    this.removeHeaderImage();
-                    this.removeBgImage();
-                    this.switchTab('content');
-                    this.showToast("App reset successfully.");
-                }
-            }
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function handleBgImage(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          uploadedBgImg = e.target.result;
+          renderCards();
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function updatePageLayout() {
+      const perPage = document.getElementById('cardsPerPage').value;
+      const wrapper = document.getElementById('cardsWrapper');
+      wrapper.className = `cards-wrapper per-page-${perPage}`;
+    }
+
+    function updatePaperSize() {
+      const size = document.getElementById('paperSize').value;
+      const styleEl = document.getElementById('dynamicPageStyle');
+      styleEl.innerHTML = `@page { size: ${size}; }`;
+    }
+
+    function generateCardItems(cardIndex, mode, size, rawWords) {
+      const totalCells = size * size;
+      let items = [];
+
+      if (mode === 'numbers' && size === 5) {
+        const ranges = [
+          [1, 15],   // B
+          [16, 30],  // I
+          [31, 45],  // N
+          [46, 60],  // G
+          [61, 75]   // O
+        ];
+
+        let colItems = [[], [], [], [], []];
+        for (let col = 0; col < 5; col++) {
+          let pool = [];
+          for (let n = ranges[col][0]; n <= ranges[col][1]; n++) pool.push(n);
+          pool.sort(() => Math.sin(cardIndex * 99 + col * 17) - 0.5);
+          colItems[col] = pool.slice(0, 5);
         }
 
-        const app = new BingoApp();
-    </script>
+        for (let row = 0; row < 5; row++) {
+          for (let col = 0; col < 5; col++) {
+            items.push(colItems[col][row]);
+          }
+        }
+      } else {
+        let pool = [...rawWords];
+        if (pool.length < totalCells - 1) {
+          while (pool.length < totalCells) {
+            pool.push(...rawWords);
+          }
+        }
+        pool.sort(() => Math.sin(cardIndex * 13 + pool.length) - 0.5);
+        items = pool.slice(0, totalCells);
+      }
+
+      return items;
+    }
+
+    function renderCards() {
+      const wrapper = document.getElementById('cardsWrapper');
+      wrapper.innerHTML = '';
+
+      const mode = document.getElementById('cardMode').value;
+      const size = parseInt(document.getElementById('gridSize').value);
+      const count = Math.min(500, Math.max(1, parseInt(document.getElementById('cardCount').value) || 1));
+      const hasFreeSpace = document.getElementById('freeSpaceCheck').checked;
+      const freeText = document.getElementById('freeSpaceText').value;
+      
+      const headerText = document.getElementById('headerText').value;
+      const subtitleText = document.getElementById('subtitleText').value;
+      const subtitleColor = document.getElementById('subtitleColor').value;
+      
+      const headerBg = document.getElementById('headerBgColor').value;
+      const headerTextCol = document.getElementById('headerTextColor').value;
+      const cellBg = document.getElementById('cellBgColor').value;
+      const cellTextCol = document.getElementById('cellTextColor').value;
+      const cellBorderCol = document.getElementById('cellBorderColor').value;
+      
+      const freeBg = document.getElementById('freeBgColor').value;
+      const freeTextCol = document.getElementById('freeTextColor').value;
+      
+      const footerMode = document.getElementById('footerMode').value;
+      const customFooterText = document.getElementById('customFooterText').value;
+      const footerTextColor = document.getElementById('footerTextColor').value;
+
+      const bgOpacity = document.getElementById('bgOpacity').value;
+
+      // Update root variables for global styling
+      document.documentElement.style.setProperty('--card-bg', '#ffffff');
+      document.documentElement.style.setProperty('--header-bg', headerBg);
+      document.documentElement.style.setProperty('--header-text', headerTextCol);
+      document.documentElement.style.setProperty('--subtitle-color', subtitleColor);
+      document.documentElement.style.setProperty('--cell-bg', cellBg);
+      document.documentElement.style.setProperty('--cell-text', cellTextCol);
+      document.documentElement.style.setProperty('--cell-border-color', cellBorderCol);
+      document.documentElement.style.setProperty('--free-bg', freeBg);
+      document.documentElement.style.setProperty('--free-text', freeTextCol);
+      document.documentElement.style.setProperty('--footer-text-color', footerTextColor);
+
+      const rawWords = document.getElementById('wordList').value
+        .split('\n')
+        .map(w => w.trim())
+        .filter(w => w.length > 0);
+
+      const centerIndex = Math.floor((size * size) / 2);
+
+      for (let i = 0; i < count; i++) {
+        const card = document.createElement('div');
+        card.className = 'bingo-card';
+        card.style.setProperty('--bg-opacity', bgOpacity);
+        if (uploadedBgImg) {
+          card.style.backgroundImage = `url(${uploadedBgImg})`;
+        }
+
+        const cardContent = document.createElement('div');
+        cardContent.className = 'card-content';
+
+        // Header Image / Logo
+        if (uploadedHeaderImg) {
+          const img = document.createElement('img');
+          img.src = uploadedHeaderImg;
+          img.className = 'card-header-img';
+          cardContent.appendChild(img);
+        }
+
+        // Main Header Text
+        if (headerText) {
+          const header = document.createElement('div');
+          header.className = 'bingo-header-text';
+          header.innerText = headerText;
+          cardContent.appendChild(header);
+        }
+
+        // Subtitle Text
+        if (subtitleText) {
+          const sub = document.createElement('div');
+          sub.className = 'bingo-subtitle-text';
+          sub.innerText = subtitleText;
+          cardContent.appendChild(sub);
+        }
+
+        // Grid
+        const grid = document.createElement('div');
+        grid.className = 'bingo-grid';
+        grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+
+        const cardItems = generateCardItems(i, mode, size, rawWords);
+
+        cardItems.forEach((item, idx) => {
+          const cell = document.createElement('div');
+          cell.className = 'bingo-cell';
+
+          if (hasFreeSpace && idx === centerIndex) {
+            cell.classList.add('free-space');
+            cell.innerText = freeText || 'FREE';
+          } else {
+            cell.innerText = item;
+          }
+          grid.appendChild(cell);
+        });
+
+        cardContent.appendChild(grid);
+
+        // Footer Formatting
+        if (footerMode !== 'none') {
+          const footer = document.createElement('div');
+          footer.className = 'card-footer';
+          let footerStr = '';
+          if (footerMode === 'cardNum') {
+            footerStr = `Card #${i + 1}`;
+          } else if (footerMode === 'customText') {
+            footerStr = customFooterText;
+          } else if (footerMode === 'both') {
+            footerStr = `Card #${i + 1} - ${customFooterText}`;
+          }
+          footer.innerText = footerStr;
+          cardContent.appendChild(footer);
+        }
+
+        card.appendChild(cardContent);
+        wrapper.appendChild(card);
+      }
+    }
+
+    // Initial render call
+    renderCards();
+  </script>
 </body>
 </html>
