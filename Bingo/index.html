@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Bingo Studio & Caller Machine</title>
+    <title>Bingo Studio Pro - Generator & Caller</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&family=Press+Start+2P&family=Permanent+Marker&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .font-fredoka { font-family: 'Fredoka', sans-serif; }
         .font-playfair { font-family: 'Playfair Display', serif; }
         .font-arcade { font-family: 'Press Start 2P', monospace; }
-        .font-marker { font-family: 'Permanent+Marker', cursive; }
+        .font-marker { font-family: 'Permanent Marker', cursive; }
         .font-mono { font-family: 'Roboto Mono', monospace; }
 
         @keyframes bounce-ball {
@@ -40,7 +41,6 @@
             .no-print { display: none !important; }
             @page { size: auto; margin: 10mm; }
     
-            /* Force browsers to print background images and colors */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -71,7 +71,7 @@
                 </button>
                 <button onclick="switchTab('viewer')" id="nav-viewer" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-800">
                     <i data-lucide="printer" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">Cards Viewer & Print</span>
+                    <span class="hidden md:inline">Print & Save PDF</span>
                     <span id="card-badge" class="ml-1 px-1.5 py-0.5 text-[10px] bg-slate-700 rounded-full text-slate-300">0</span>
                 </button>
                 <button onclick="switchTab('caller')" id="nav-caller" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-800">
@@ -119,13 +119,13 @@
                             </div>
                         </div>
 
-                        <!-- Word Pool Container (conditional) -->
+                        <!-- Word Pool Container -->
                         <div id="word-pool-section" class="space-y-2 hidden">
                             <label class="block text-xs font-medium text-slate-300 flex justify-between">
                                 <span>Word Pool (Comma separated or per line)</span>
                                 <span id="word-count-badge" class="text-indigo-400">0 words</span>
                             </label>
-                            <textarea id="word-pool-input" rows="3" placeholder="Apple, Banana, Cherry, Date, Elderberry..." oninput="updateWordPool()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-y"></textarea>
+                            <textarea id="word-pool-input" rows="3" placeholder="Apple, Banana, Cherry, Date..." oninput="updateWordPool()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-y"></textarea>
                         </div>
 
                         <!-- FREE Slot & Footer Toggles -->
@@ -155,7 +155,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-slate-300 mb-1">Footer Text / Event Name</label>
-                                <input type="text" id="footer-text" value="Annual Charity Bingo Night 2026" oninput="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <input type="text" id="footer-text" value="Annual Bingo Event 2026" oninput="triggerUpdate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                             </div>
                         </div>
 
@@ -218,7 +218,7 @@
                             </div>
                         </div>
 
-                        <!-- Bulk Generation Quantity -->
+                        <!-- Quantity -->
                         <div class="pt-4 border-t border-slate-700 space-y-4">
                             <div class="flex items-center justify-between">
                                 <label class="block text-xs font-medium text-slate-300">Cards to Generate (Max 1,000)</label>
@@ -249,17 +249,16 @@
                             </div>
                         </div>
 
-                        <!-- Interactive Live Card Render Frame -->
+                        <!-- Live Card Render Frame -->
                         <div class="flex justify-center overflow-auto p-4 bg-slate-950/60 rounded-xl border border-slate-700/50 min-h-[480px] items-center">
                             <div id="live-card-preview" class="transition-all shadow-2xl rounded-2xl p-6 w-full max-w-[420px] relative overflow-hidden flex flex-col justify-between">
-                                <!-- Card content injected via JS -->
                             </div>
                         </div>
 
                         <div class="flex justify-end">
                             <button onclick="switchTab('viewer')" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-xl transition flex items-center space-x-2">
                                 <i data-lucide="printer" class="w-4 h-4"></i>
-                                <span>Proceed to Print Layouts</span>
+                                <span>Proceed to Print & Export Layouts</span>
                             </button>
                         </div>
                     </div>
@@ -268,16 +267,16 @@
             </div>
         </section>
 
-        <!-- TAB 2: CARDS VIEWER & PRINT LAYOUT -->
+        <!-- TAB 2: CARDS VIEWER & PRINT/EXPORT LAYOUT -->
         <section id="tab-viewer" class="space-y-6 hidden">
             <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-700 pb-4">
                     <div>
                         <h2 class="font-fredoka text-xl font-semibold text-indigo-300">Generated Bingo Cards (<span id="total-cards-count">0</span>)</h2>
-                        <p class="text-xs text-slate-400">Ready for printing or PDF export</p>
+                        <p class="text-xs text-slate-400">Print directly or export generated sheets as PDF document</p>
                     </div>
 
-                    <!-- Print Configuration Controls -->
+                    <!-- Layout & Print/PDF Export Options -->
                     <div class="flex flex-wrap items-center gap-3">
                         <div>
                             <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Cards per Page</label>
@@ -287,23 +286,23 @@
                                 <option value="4">4 Cards per Page (Compact)</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Paper Size</label>
-                            <select id="paper-size" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                                <option value="letter">Letter (8.5 x 11 in)</option>
-                                <option value="a4">A4 (210 x 297 mm)</option>
-                            </select>
+                        
+                        <!-- SEPARATE PRINT & SAVE PDF BUTTONS -->
+                        <div class="flex items-center space-x-2 mt-4 sm:mt-0">
+                            <button onclick="triggerPrint()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-lg shadow-indigo-600/30 flex items-center space-x-2 transition">
+                                <i data-lucide="printer" class="w-4 h-4"></i>
+                                <span>Print Cards</span>
+                            </button>
+                            <button onclick="exportToPDF()" id="export-pdf-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-600/30 flex items-center space-x-2 transition">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Save as PDF</span>
+                            </button>
                         </div>
-                        <button onclick="triggerPrint()" class="mt-4 sm:mt-0 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/30 flex items-center space-x-2 transition">
-                            <i data-lucide="printer" class="w-4 h-4"></i>
-                            <span>Print / Save PDF</span>
-                        </button>
                     </div>
                 </div>
 
-                <!-- Print Container Area -->
+                <!-- Print & PDF Export Container Area -->
                 <div id="print-container" class="space-y-8 bg-slate-950 p-6 rounded-2xl border border-slate-800">
-                    <!-- Cards will be dynamically paginated here -->
                 </div>
             </div>
         </section>
@@ -312,7 +311,7 @@
         <section id="tab-caller" class="space-y-6 hidden">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                <!-- Caller Controls & Tumbler -->
+                <!-- Caller Controls & Display -->
                 <div class="lg:col-span-5 space-y-6">
                     <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl text-center space-y-6">
                         <div class="flex items-center justify-between border-b border-slate-700 pb-4">
@@ -326,11 +325,10 @@
                             </button>
                         </div>
 
-                        <!-- Current Ball / Word Display -->
+                        <!-- Current Draw Sphere -->
                         <div class="relative py-8 flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-indigo-950/40 rounded-2xl border border-indigo-500/30 shadow-inner overflow-hidden">
                             <div class="absolute top-3 left-4 text-xs uppercase tracking-widest text-indigo-400 font-semibold">Latest Draw</div>
                             
-                            <!-- Lottery Ball 3D effect -->
                             <div id="current-ball-display" class="w-36 h-36 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 shadow-2xl shadow-indigo-500/50 flex flex-col items-center justify-center p-4 border-4 border-white/20 animate-glow transform transition-all duration-300">
                                 <span id="current-ball-prefix" class="text-xs font-bold uppercase tracking-wider text-white/80">READY</span>
                                 <span id="current-ball-number" class="font-fredoka text-4xl sm:text-5xl font-bold text-white tracking-tight">--</span>
@@ -339,7 +337,7 @@
                             <div class="mt-4 text-sm text-slate-300 font-medium" id="current-ball-subtitle">Click draw button below</div>
                         </div>
 
-                        <!-- Draw Action Buttons -->
+                        <!-- Controls -->
                         <div class="grid grid-cols-2 gap-4">
                             <button onclick="drawNextBall()" id="draw-btn" class="py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 transition transform active:scale-95">
                                 <i data-lucide="play" class="w-5 h-5"></i>
@@ -351,7 +349,7 @@
                             </button>
                         </div>
 
-                        <!-- Stats & Progress -->
+                        <!-- Stats -->
                         <div class="grid grid-cols-2 gap-4 pt-2 text-left">
                             <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
                                 <div class="text-[10px] text-slate-400 uppercase font-semibold">Drawn Count</div>
@@ -365,7 +363,7 @@
                     </div>
                 </div>
 
-                <!-- Drawn History & Board Grid -->
+                <!-- Drawn History & Master Board -->
                 <div class="lg:col-span-7 space-y-6">
                     <div class="bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-4">
                         <div class="flex items-center justify-between border-b border-slate-700 pb-4">
@@ -378,7 +376,6 @@
 
                         <!-- Master Grid Board -->
                         <div id="master-board-grid" class="grid gap-2 max-h-[450px] overflow-y-auto p-2">
-                            <!-- Dynamic grid generated via JS -->
                         </div>
                     </div>
                 </div>
@@ -388,9 +385,9 @@
 
     </main>
 
-    <!-- Grand Zoom Ball Modal -->
+    <!-- Zoom Ball Overlay Modal -->
     <div id="zoom-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-indigo-500/50 rounded-3xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl transform scale-95 transition-all duration-300" id="zoom-modal-card">
+        <div class="bg-slate-900 border border-indigo-500/50 rounded-3xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl transform scale-95 transition-all duration-300">
             <div class="w-32 h-32 mx-auto rounded-full bg-gradient-to-tr from-indigo-500 via-purple-600 to-pink-500 flex flex-col items-center justify-center shadow-2xl shadow-indigo-500/60 border-4 border-white/30 animate-bounce-ball">
                 <span id="modal-ball-prefix" class="text-xs font-bold uppercase tracking-wider text-white/90">BINGO</span>
                 <span id="modal-ball-text" class="font-fredoka text-4xl font-bold text-white">B-12</span>
@@ -405,7 +402,7 @@
         </div>
     </div>
 
-    <!-- Custom Notification / Message Box -->
+    <!-- Message Modal -->
     <div id="msg-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
             <h3 id="msg-title" class="font-fredoka text-lg font-bold text-white">Notice</h3>
@@ -429,12 +426,12 @@
     <script>
         // Global Application State
         let appState = {
-            gameType: 'number', // 'number' or 'word'
-            gridSize: 5,        // 3, 4, or 5
+            gameType: 'number',
+            gridSize: 5,
             freeSlot: true,
             headerText: 'BINGO',
             logoUrl: null,
-            footerText: 'Annual Charity Bingo Night 2026',
+            footerText: 'Annual Bingo Event 2026',
             showFooter: true,
             fontFamily: 'Fredoka',
             textSize: 'text-base',
@@ -462,7 +459,7 @@
             initApp();
         });
 
-        // Helper: Get Bingo Letter for a number (1-75)
+        // Helper: Standard Bingo Letter Mapping (1-75)
         function getBingoLetter(num) {
             if (num >= 1 && num <= 15) return 'B';
             if (num >= 16 && num <= 30) return 'I';
@@ -472,7 +469,7 @@
             return '';
         }
 
-        // Tab Navigation
+        // Navigation Controller
         function switchTab(tabId) {
             ['generator', 'viewer', 'caller'].forEach(id => {
                 document.getElementById('tab-' + id).classList.add('hidden');
@@ -489,7 +486,6 @@
             lucide.createIcons();
         }
 
-        // Initialize App & Defaults
         function initApp() {
             updateGameType();
             generateCards();
@@ -501,7 +497,7 @@
             document.getElementById('free-slot-toggle').checked = true;
             document.getElementById('footer-toggle').checked = true;
             document.getElementById('header-text').value = 'BINGO';
-            document.getElementById('footer-text').value = 'Annual Charity Bingo Night 2026';
+            document.getElementById('footer-text').value = 'Annual Bingo Event 2026';
             document.getElementById('font-family').value = 'Fredoka';
             document.getElementById('text-size').value = 'text-base';
             document.getElementById('bg-color').value = '#ffffff';
@@ -518,7 +514,7 @@
             document.getElementById('bg-image-file').value = '';
             updateBgImageStyle();
             triggerUpdate();
-            showMsg("Defaults Restored", "All customization settings have been reset.");
+            showMsg("Defaults Restored", "All settings have been reset to default values.");
         }
 
         function updateGameType() {
@@ -591,14 +587,13 @@
             appState.borderColor = document.getElementById('border-color').value;
             appState.overlayOpacity = parseInt(document.getElementById('overlay-opacity').value);
             
-            // Sync text inputs
             document.getElementById('bg-color-text').value = appState.bgColor;
             document.getElementById('border-color-text').value = appState.borderColor;
 
             renderLivePreview();
         }
 
-        // Card Generation Logic with Column Ranges for 5x5 Number Bingo
+        // Standard American Bingo Number Generation
         function generateCards() {
             triggerUpdate();
             const qty = parseInt(document.getElementById('card-quantity').value) || 10;
@@ -613,7 +608,7 @@
                 let cellValues = [];
 
                 if (appState.gameType === 'number' && size === 5) {
-                    // Column distribution: B(1-15), I(16-30), N(31-45), G(46-60), O(61-75)
+                    // Standard American Bingo distribution per column
                     let colB = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 1)).slice(0, 5);
                     let colI = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 16)).slice(0, 5);
                     let colN = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 31)).slice(0, hasFree ? 4 : 5);
@@ -621,10 +616,9 @@
                     let colO = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 61)).slice(0, 5);
 
                     if (hasFree) {
-                        colN.splice(2, 0, 'FREE'); // Insert at center row of column N
+                        colN.splice(2, 0, 'FREE');
                     }
 
-                    // Assemble into row-by-row layout for grid rendering
                     for (let r = 0; r < 5; r++) {
                         cellValues.push(colB[r]);
                         cellValues.push(colI[r]);
@@ -705,7 +699,7 @@
             html += `<h2 class="font-bold tracking-widest text-2xl" style="color: ${appState.borderColor};">${appState.headerText}</h2>`;
             html += `</div>`;
 
-            // B-I-N-G-O Column Letter Header Row (if 5x5 Number Bingo)
+            // Letter Row
             const size = appState.gridSize;
             if (appState.gameType === 'number' && size === 5) {
                 const letters = ['B', 'I', 'N', 'G', 'O'];
@@ -755,7 +749,7 @@
             renderLivePreview();
         }
 
-        // Print Viewer & Layout
+        // Print & Export Sheet Renderer
         function renderPrintPreview() {
             const container = document.getElementById('print-container');
             const layout = parseInt(document.getElementById('print-layout').value);
@@ -787,7 +781,6 @@
                                 </div>
                     `;
 
-                    // B-I-N-G-O Header Row for Print if 5x5 Number Bingo
                     if (appState.gameType === 'number' && appState.gridSize === 5) {
                         const letters = ['B', 'I', 'N', 'G', 'O'];
                         html += `<div class="grid gap-1 mt-1 mb-1" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));">`;
@@ -828,11 +821,51 @@
             container.innerHTML = html;
         }
 
+        // SEPARATE PRINT FUNCTION
         function triggerPrint() {
+            if (appState.generatedCards.length === 0) {
+                showMsg("Notice", "Please generate cards first before printing.");
+                return;
+            }
             window.print();
         }
 
-        // Bingo Caller / Draw Logic
+        // SEPARATE SAVE AS PDF FUNCTION
+        function exportToPDF() {
+            if (appState.generatedCards.length === 0) {
+                showMsg("Notice", "Please generate cards first before exporting to PDF.");
+                return;
+            }
+
+            const element = document.getElementById('print-container');
+            const btn = document.getElementById('export-pdf-btn');
+            
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Exporting PDF...</span>`;
+            lucide.createIcons();
+
+            const opt = {
+                margin:       0.3,
+                filename:     `Bingo_Cards_${appState.generatedCards.length}_Qty.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i><span>Save as PDF</span>`;
+                lucide.createIcons();
+            }).catch(err => {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i><span>Save as PDF</span>`;
+                lucide.createIcons();
+                showMsg("PDF Export Failed", "An error occurred during PDF generation.");
+            });
+        }
+
+        // Caller Engine
         function initDrawPool() {
             let pool = [];
             if (appState.gameType === 'number') {
@@ -861,7 +894,6 @@
                     html += `<div class="bg-indigo-600 text-white text-center font-bold py-2 rounded-xl text-sm shadow">${letter}</div>`;
                 });
 
-                // 15 rows across 5 columns (B: 1-15, I: 16-30, N: 31-45, G: 46-60, O: 61-75)
                 for (let r = 0; r < 15; r++) {
                     let nums = [r + 1, r + 16, r + 31, r + 46, r + 61];
                     nums.forEach(num => {
@@ -888,7 +920,7 @@
             } else {
                 const totalItems = appState.wordPool.length;
                 document.getElementById('game-mode-indicator').innerText = `Word Bingo (${totalItems} Words)`;
-                grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(50px, 1fr))`;
+                grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(60px, 1fr))`;
 
                 let html = '';
                 for (let i = 0; i < totalItems; i++) {
@@ -896,7 +928,7 @@
                     let isDrawn = appState.draw.drawn.includes(item);
                     let isCurrent = appState.draw.current === item;
 
-                    let cls = 'aspect-square rounded-xl flex items-center justify-center font-bold text-xs transition shadow-sm ';
+                    let cls = 'aspect-square rounded-xl flex items-center justify-center font-bold text-xs transition shadow-sm p-1 text-center ';
                     if (isCurrent) {
                         cls += 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white ring-4 ring-indigo-400 scale-105 animate-pulse';
                     } else if (isDrawn) {
@@ -905,7 +937,7 @@
                         cls += 'bg-slate-900 text-slate-400 border border-slate-700 hover:border-slate-500';
                     }
 
-                    html += `<div class="${cls}">${item}</div>`;
+                    html += `<div class="${cls}"><span class="truncate">${item}</span></div>`;
                 }
                 grid.innerHTML = html;
             }
@@ -913,7 +945,7 @@
 
         function drawNextBall() {
             if (appState.draw.pool.length === 0) {
-                showMsg("Draw Complete", "All balls/words have been drawn!");
+                showMsg("Draw Complete", "All items have been drawn!");
                 stopAutoDraw();
                 return;
             }
@@ -922,7 +954,6 @@
             appState.draw.drawn.push(drawnItem);
             appState.draw.current = drawnItem;
 
-            // Update UI
             if (appState.gameType === 'number') {
                 const letter = getBingoLetter(drawnItem);
                 document.getElementById('current-ball-prefix').innerText = letter;
@@ -947,10 +978,10 @@
             if (appState.gameType === 'number') {
                 const letter = getBingoLetter(item);
                 document.getElementById('modal-ball-text').innerText = `${letter}-${item}`;
-                document.getElementById('modal-ball-desc').innerText = `Ball ${letter}-${item} has been drawn successfully!`;
+                document.getElementById('modal-ball-desc').innerText = `Ball ${letter}-${item} has been drawn!`;
             } else {
                 document.getElementById('modal-ball-text').innerText = item;
-                document.getElementById('modal-ball-desc').innerText = `Word "${item}" has been drawn successfully!`;
+                document.getElementById('modal-ball-desc').innerText = `Word "${item}" has been drawn!`;
             }
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -993,7 +1024,7 @@
 
         function confirmResetDraw() {
             stopAutoDraw();
-            openConfirmModal("Are you sure you want to reset the entire bingo draw history?", () => {
+            openConfirmModal("Are you sure you want to reset the draw history?", () => {
                 initDrawPool();
                 document.getElementById('current-ball-prefix').innerText = 'READY';
                 document.getElementById('current-ball-number').innerText = '--';
@@ -1002,7 +1033,7 @@
             });
         }
 
-        // Modals Helper
+        // Modals
         function showMsg(title, body) {
             document.getElementById('msg-title').innerText = title;
             document.getElementById('msg-body').innerText = body;
@@ -1037,7 +1068,7 @@
             modal.classList.add('hidden');
         }
 
-        // Local Storage Persistence
+        // Storage
         function saveToLocalStorage() {
             try {
                 localStorage.setItem('bingo_studio_state', JSON.stringify({
@@ -1052,7 +1083,7 @@
                     wordPool: appState.wordPool
                 }));
             } catch (e) {
-                console.error("Storage limit reached", e);
+                console.error("Storage write error", e);
             }
         }
 
@@ -1071,7 +1102,6 @@
                     appState.borderColor = data.borderColor || '#4f46e5';
                     if (data.wordPool) appState.wordPool = data.wordPool;
 
-                    // Sync UI elements
                     document.getElementById('game-type').value = appState.gameType;
                     document.getElementById('grid-size').value = appState.gridSize;
                     document.getElementById('free-slot-toggle').checked = appState.freeSlot;
@@ -1084,7 +1114,7 @@
                     document.getElementById('border-color-text').value = appState.borderColor;
                 }
             } catch (e) {
-                console.error("Failed to load local storage", e);
+                console.error("Storage read error", e);
             }
         }
 
