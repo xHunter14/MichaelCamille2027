@@ -39,6 +39,12 @@
             #print-container { position: absolute; left: 0; top: 0; width: 100%; }
             .no-print { display: none !important; }
             @page { size: auto; margin: 10mm; }
+    
+            /* Force browsers to print background images and colors */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
     </style>
 </head>
@@ -555,6 +561,7 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     appState.bgImage = e.target.result;
+                    updateBgImageStyle(); // <-- Add this line
                     triggerUpdate();
                 };
                 reader.readAsDataURL(file);
@@ -656,7 +663,7 @@
             }
 
             let html = `
-                <div class="absolute inset-0" style="${bgStyle}"></div>
+                <div class="absolute inset-0 custom-card-bg"></div>
                 <div class="absolute inset-0 bg-white" style="opacity: ${appState.overlayOpacity / 100};"></div>
                 <div class="relative z-10 flex flex-col h-full text-slate-800">
             `;
@@ -737,7 +744,7 @@
 
                     html += `
                         <div class="card-print-item relative p-5 rounded-2xl shadow-md border-2 overflow-hidden flex flex-col justify-between h-[440px]" style="background-color: ${appState.bgColor}; border-color: ${appState.borderColor}; font-family: ${appState.fontFamily};">
-                            <div class="absolute inset-0" style="${bgStyle}"></div>
+                            <div class="absolute inset-0 custom-card-bg"></div>
                             <div class="absolute inset-0 bg-white" style="opacity: ${appState.overlayOpacity / 100};"></div>
                             
                             <div class="relative z-10 flex flex-col h-full">
@@ -989,6 +996,20 @@
                 }
             } catch (e) {
                 console.error("Failed to load local storage", e);
+            }
+        }
+
+        function updateBgImageStyle() {
+            let styleEl = document.getElementById('dynamic-bg-style');
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = 'dynamic-bg-style';
+                document.head.appendChild(styleEl);
+            }
+            if (appState.bgImage) {
+                styleEl.innerHTML = `.custom-card-bg { background-image: url('${appState.bgImage}'); background-size: cover; background-position: center; }`;
+            } else {
+                styleEl.innerHTML = `.custom-card-bg { background-image: none; }`;
             }
         }
     </script>
