@@ -14,14 +14,12 @@
       --border-color: #cbd5e1;
       --header-bg: #4f46e5;
       --header-text: #ffffff;
-      --subtitle-color: #64748b;
       --cell-bg: #ffffff;
       --cell-text: #1e293b;
       --cell-border-color: #cbd5e1;
       --cell-border-width: 2px;
       --free-bg: #fef08a;
       --free-text: #854d0e;
-      --footer-text-color: #64748b;
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --cell-font-size: 2.5rem;
     }
@@ -239,15 +237,6 @@
       line-height: 1.1;
     }
 
-    .bingo-subtitle-text {
-      text-align: center;
-      color: var(--subtitle-color);
-      font-size: 0.95rem;
-      font-weight: 600;
-      margin-top: 4px;
-      margin-bottom: 8px;
-    }
-
     .bingo-grid {
       display: grid;
       gap: 6px;
@@ -255,7 +244,7 @@
       margin: 8px 0;
     }
 
-    /* SQUARE ASPECT RATIO CELL */
+    /* STRICT 1:1 SQUARE ASPECT RATIO CELL */
     .bingo-cell {
       aspect-ratio: 1 / 1;
       background-color: var(--cell-bg);
@@ -285,7 +274,7 @@
       font-size: 0.85rem;
       font-weight: 600;
       text-align: center;
-      color: var(--footer-text-color);
+      color: #64748b;
     }
 
     /* PRINT STYLES */
@@ -433,16 +422,12 @@ Blackberry</textarea>
           </div>
         </div>
 
-        <!-- 2. Header, Subtitle & Logo -->
+        <!-- 2. Header & Logo -->
         <div class="control-section">
-          <div class="section-title">2. Header & Subtitle</div>
+          <div class="section-title">2. Header & Images</div>
           <div class="form-group">
             <label for="headerText">Header Text</label>
             <input type="text" id="headerText" value="BINGO" oninput="renderCards()">
-          </div>
-          <div class="form-group">
-            <label for="subtitleText">Subtitle / Tagline (Optional)</label>
-            <input type="text" id="subtitleText" value="Personal Game Night" oninput="renderCards()">
           </div>
           <div class="form-group">
             <label for="headerImgInput">Upload Custom Header/Logo</label>
@@ -506,10 +491,6 @@ Blackberry</textarea>
               <label for="headerTextColor">Header Text</label>
               <input type="color" id="headerTextColor" value="#ffffff" onchange="renderCards()">
             </div>
-            <div class="form-group">
-              <label for="subtitleColor">Subtitle Text</label>
-              <input type="color" id="subtitleColor" value="#64748b" onchange="renderCards()">
-            </div>
           </div>
 
           <div class="row">
@@ -539,31 +520,9 @@ Blackberry</textarea>
           </div>
         </div>
 
-        <!-- 5. Footer Settings -->
+        <!-- 5. Print & Layout Options -->
         <div class="control-section">
-          <div class="section-title">5. Footer Customization</div>
-          <div class="form-group">
-            <label for="footerMode">Footer Mode</label>
-            <select id="footerMode" onchange="renderCards()">
-              <option value="cardNum" selected>Card Number Only (Card #1)</option>
-              <option value="customText">Custom Text Only</option>
-              <option value="both">Card Number + Custom Text</option>
-              <option value="none">Hide Footer</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="customFooterText">Custom Footer Text</label>
-            <input type="text" id="customFooterText" value="Enjoy the Game!" oninput="renderCards()">
-          </div>
-          <div class="form-group">
-            <label for="footerTextColor">Footer Text Color</label>
-            <input type="color" id="footerTextColor" value="#64748b" onchange="renderCards()">
-          </div>
-        </div>
-
-        <!-- 6. Print & Layout Options -->
-        <div class="control-section">
-          <div class="section-title">6. Print & Bulk Options</div>
+          <div class="section-title">5. Print & Bulk Options</div>
           <div class="form-group">
             <label for="cardCount">Number of Cards (1–500)</label>
             <input type="number" id="cardCount" min="1" max="500" value="4" onchange="renderCards()">
@@ -734,9 +693,6 @@ Blackberry</textarea>
       const freeText = document.getElementById('freeSpaceText').value;
       
       const headerText = document.getElementById('headerText').value;
-      const subtitleText = document.getElementById('subtitleText').value;
-      const subtitleColor = document.getElementById('subtitleColor').value;
-      
       const headerBg = document.getElementById('headerBgColor').value;
       const headerTextCol = document.getElementById('headerTextColor').value;
       const cellBg = document.getElementById('cellBgColor').value;
@@ -745,23 +701,17 @@ Blackberry</textarea>
       
       const freeBg = document.getElementById('freeBgColor').value;
       const freeTextCol = document.getElementById('freeTextColor').value;
-      
-      const footerMode = document.getElementById('footerMode').value;
-      const customFooterText = document.getElementById('customFooterText').value;
-      const footerTextColor = document.getElementById('footerTextColor').value;
 
       const bgOpacity = document.getElementById('bgOpacity').value;
 
       document.documentElement.style.setProperty('--card-bg', '#ffffff');
       document.documentElement.style.setProperty('--header-bg', headerBg);
       document.documentElement.style.setProperty('--header-text', headerTextCol);
-      document.documentElement.style.setProperty('--subtitle-color', subtitleColor);
       document.documentElement.style.setProperty('--cell-bg', cellBg);
       document.documentElement.style.setProperty('--cell-text', cellTextCol);
       document.documentElement.style.setProperty('--cell-border-color', cellBorderCol);
       document.documentElement.style.setProperty('--free-bg', freeBg);
       document.documentElement.style.setProperty('--free-text', freeTextCol);
-      document.documentElement.style.setProperty('--footer-text-color', footerTextColor);
 
       const rawWords = document.getElementById('wordList').value
         .split('\n')
@@ -795,13 +745,6 @@ Blackberry</textarea>
           cardContent.appendChild(header);
         }
 
-        if (subtitleText) {
-          const sub = document.createElement('div');
-          sub.className = 'bingo-subtitle-text';
-          sub.innerText = subtitleText;
-          cardContent.appendChild(sub);
-        }
-
         const grid = document.createElement('div');
         grid.className = 'bingo-grid';
         grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
@@ -823,20 +766,11 @@ Blackberry</textarea>
 
         cardContent.appendChild(grid);
 
-        if (footerMode !== 'none') {
-          const footer = document.createElement('div');
-          footer.className = 'card-footer';
-          let footerStr = '';
-          if (footerMode === 'cardNum') {
-            footerStr = `Card #${i + 1}`;
-          } else if (footerMode === 'customText') {
-            footerStr = customFooterText;
-          } else if (footerMode === 'both') {
-            footerStr = `Card #${i + 1} - ${customFooterText}`;
-          }
-          footer.innerText = footerStr;
-          cardContent.appendChild(footer);
-        }
+        // Simple standard Card #N footer
+        const footer = document.createElement('div');
+        footer.className = 'card-footer';
+        footer.innerText = `Card #${i + 1}`;
+        cardContent.appendChild(footer);
 
         card.appendChild(cardContent);
         wrapper.appendChild(card);
