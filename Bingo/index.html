@@ -105,7 +105,7 @@
                             <div>
                                 <label class="block text-xs font-medium text-slate-300 mb-1.5">Game Type</label>
                                 <select id="game-type" onchange="updateGameType()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                                    <option value="number">Number Bingo</option>
+                                    <option value="number">Number Bingo (1-75)</option>
                                     <option value="word">Word / Custom Bingo</option>
                                 </select>
                             </div>
@@ -462,6 +462,16 @@
             initApp();
         });
 
+        // Helper: Get Bingo Letter for a number (1-75)
+        function getBingoLetter(num) {
+            if (num >= 1 && num <= 15) return 'B';
+            if (num >= 16 && num <= 30) return 'I';
+            if (num >= 31 && num <= 45) return 'N';
+            if (num >= 46 && num <= 60) return 'G';
+            if (num >= 61 && num <= 75) return 'O';
+            return '';
+        }
+
         // Tab Navigation
         function switchTab(tabId) {
             ['generator', 'viewer', 'caller'].forEach(id => {
@@ -506,6 +516,7 @@
             document.getElementById('remove-logo-btn').classList.add('hidden');
             document.getElementById('logo-file').value = '';
             document.getElementById('bg-image-file').value = '';
+            updateBgImageStyle();
             triggerUpdate();
             showMsg("Defaults Restored", "All customization settings have been reset.");
         }
@@ -561,7 +572,7 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     appState.bgImage = e.target.result;
-                    updateBgImageStyle(); // <-- Add this line
+                    updateBgImageStyle();
                     triggerUpdate();
                 };
                 reader.readAsDataURL(file);
@@ -587,7 +598,7 @@
             renderLivePreview();
         }
 
-        // Card Generation Logic
+        // Card Generation Logic with Column Ranges for 5x5 Number Bingo
         function generateCards() {
             triggerUpdate();
             const qty = parseInt(document.getElementById('card-quantity').value) || 10;
@@ -597,31 +608,54 @@
             const size = appState.gridSize;
             const totalCells = size * size;
             const hasFree = appState.freeSlot && (totalCells % 2 === 1);
-            const neededItems = hasFree ? totalCells - 1 : totalCells;
 
             for (let i = 0; i < appState.cardQuantity; i++) {
                 let cellValues = [];
-                if (appState.gameType === 'number') {
-                    // Standard B-I-N-G-O column distribution or random range
-                    let maxNum = size === 3 ? 30 : (size === 4 ? 60 : 75);
+
+                if (appState.gameType === 'number' && size === 5) {
+                    // Column distribution: B(1-15), I(16-30), N(31-45), G(46-60), O(61-75)
+                    let colB = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 1)).slice(0, 5);
+                    let colI = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 16)).slice(0, 5);
+                    let colN = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 31)).slice(0, hasFree ? 4 : 5);
+                    let colG = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 46)).slice(0, 5);
+                    let colO = shuffleArray(Array.from({length: 15}, (_, idx) => idx + 61)).slice(0, 5);
+
+                    if (hasFree) {
+                        colN.splice(2, 0, 'FREE'); // Insert at center row of column N
+                    }
+
+                    // Assemble into row-by-row layout for grid rendering
+                    for (let r = 0; r < 5; r++) {
+                        cellValues.push(colB[r]);
+                        cellValues.push(colI[r]);
+                        cellValues.push(colN[r]);
+                        cellValues.push(colG[r]);
+                        cellValues.push(colO[r]);
+                    }
+                } else if (appState.gameType === 'number') {
+                    let maxNum = size === 3 ? 30 : 60;
                     let allNums = Array.from({length: maxNum}, (_, idx) => idx + 1);
                     shuffleArray(allNums);
+                    let neededItems = hasFree ? totalCells - 1 : totalCells;
                     cellValues = allNums.slice(0, neededItems);
+                    if (hasFree) {
+                        const mid = Math.floor(totalCells / 2);
+                        cellValues.splice(mid, 0, 'FREE');
+                    }
                 } else {
+                    let neededItems = hasFree ? totalCells - 1 : totalCells;
                     let pool = [...appState.wordPool];
                     if (pool.length < neededItems) {
-                        // Pad pool if not enough words
                         while (pool.length < neededItems) {
                             pool.push('Word ' + (pool.length + 1));
                         }
                     }
                     shuffleArray(pool);
                     cellValues = pool.slice(0, neededItems);
-                }
-
-                if (hasFree) {
-                    const mid = Math.floor(totalCells / 2);
-                    cellValues.splice(mid, 0, 'FREE');
+                    if (hasFree) {
+                        const mid = Math.floor(totalCells / 2);
+                        cellValues.splice(mid, 0, 'FREE');
+                    }
                 }
 
                 appState.generatedCards.push({
@@ -657,11 +691,6 @@
             previewEl.style.fontFamily = appState.fontFamily;
             previewEl.style.backgroundColor = appState.bgColor;
 
-            let bgStyle = '';
-            if (appState.bgImage) {
-                bgStyle = `background-image: url('${appState.bgImage}'); background-size: cover; background-position: center;`;
-            }
-
             let html = `
                 <div class="absolute inset-0 custom-card-bg"></div>
                 <div class="absolute inset-0 bg-white" style="opacity: ${appState.overlayOpacity / 100};"></div>
@@ -676,9 +705,19 @@
             html += `<h2 class="font-bold tracking-widest text-2xl" style="color: ${appState.borderColor};">${appState.headerText}</h2>`;
             html += `</div>`;
 
-            // Grid Cells
+            // B-I-N-G-O Column Letter Header Row (if 5x5 Number Bingo)
             const size = appState.gridSize;
-            html += `<div class="grid gap-1.5 my-3 flex-1" style="display: grid; grid-template-columns: repeat(${size}, minmax(0, 1fr));">`;
+            if (appState.gameType === 'number' && size === 5) {
+                const letters = ['B', 'I', 'N', 'G', 'O'];
+                html += `<div class="grid gap-1.5 mt-2 mb-1" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));">`;
+                letters.forEach(letter => {
+                    html += `<div class="text-center font-bold text-sm py-1 rounded shadow-sm" style="color: ${appState.borderColor}; background-color: ${appState.bgColor}; border: 2px solid ${appState.borderColor};">${letter}</div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Grid Cells
+            html += `<div class="grid gap-1.5 my-2 flex-1" style="display: grid; grid-template-columns: repeat(${size}, minmax(0, 1fr));">`;
             
             card.cells.forEach(val => {
                 const isFree = val === 'FREE';
@@ -720,7 +759,6 @@
         function renderPrintPreview() {
             const container = document.getElementById('print-container');
             const layout = parseInt(document.getElementById('print-layout').value);
-            const paperSize = document.getElementById('paper-size').value;
 
             if (appState.generatedCards.length === 0) {
                 container.innerHTML = `<p class="text-center text-slate-400 py-12">No cards generated yet. Please generate cards first.</p>`;
@@ -736,14 +774,9 @@
                 for (let j = 0; j < cardsPerPage; j++) {
                     const card = appState.generatedCards[i + j];
                     if (!card) break;
-                    
-                    let bgStyle = '';
-                    if (appState.bgImage) {
-                        bgStyle = `background-image: url('${appState.bgImage}'); background-size: cover; background-position: center;`;
-                    }
 
                     html += `
-                        <div class="card-print-item relative p-5 rounded-2xl shadow-md border-2 overflow-hidden flex flex-col justify-between h-[440px]" style="background-color: ${appState.bgColor}; border-color: ${appState.borderColor}; font-family: ${appState.fontFamily};">
+                        <div class="card-print-item relative p-5 rounded-2xl shadow-md border-2 overflow-hidden flex flex-col justify-between h-[460px]" style="background-color: ${appState.bgColor}; border-color: ${appState.borderColor}; font-family: ${appState.fontFamily};">
                             <div class="absolute inset-0 custom-card-bg"></div>
                             <div class="absolute inset-0 bg-white" style="opacity: ${appState.overlayOpacity / 100};"></div>
                             
@@ -752,8 +785,20 @@
                                     ${appState.logoUrl ? `<img src="${appState.logoUrl}" class="h-8 mx-auto mb-1 object-contain" alt="Logo">` : ''}
                                     <h3 class="font-bold tracking-widest text-xl" style="color: ${appState.borderColor};">${appState.headerText}</h3>
                                 </div>
+                    `;
 
-                                <div class="grid gap-1 my-2 flex-1" style="display: grid; grid-template-columns: repeat(${appState.gridSize}, minmax(0, 1fr));">
+                    // B-I-N-G-O Header Row for Print if 5x5 Number Bingo
+                    if (appState.gameType === 'number' && appState.gridSize === 5) {
+                        const letters = ['B', 'I', 'N', 'G', 'O'];
+                        html += `<div class="grid gap-1 mt-1 mb-1" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));">`;
+                        letters.forEach(letter => {
+                            html += `<div class="text-center font-bold text-xs py-0.5 rounded shadow-sm" style="color: ${appState.borderColor}; background-color: ${appState.bgColor}; border: 1px solid ${appState.borderColor};">${letter}</div>`;
+                        });
+                        html += `</div>`;
+                    }
+
+                    html += `
+                                <div class="grid gap-1 my-1 flex-1" style="display: grid; grid-template-columns: repeat(${appState.gridSize}, minmax(0, 1fr));">
                     `;
 
                     card.cells.forEach(val => {
@@ -791,8 +836,7 @@
         function initDrawPool() {
             let pool = [];
             if (appState.gameType === 'number') {
-                let maxNum = appState.gridSize === 3 ? 30 : (appState.gridSize === 4 ? 60 : 75);
-                pool = Array.from({length: maxNum}, (_, i) => i + 1);
+                pool = Array.from({length: 75}, (_, i) => i + 1);
             } else {
                 pool = [...appState.wordPool];
             }
@@ -806,31 +850,65 @@
 
         function initMasterBoard() {
             const grid = document.getElementById('master-board-grid');
-            const totalItems = appState.gameType === 'number' ? (appState.gridSize === 3 ? 30 : (appState.gridSize === 4 ? 60 : 75)) : appState.wordPool.length;
             
-            document.getElementById('game-mode-indicator').innerText = appState.gameType === 'number' ? `Number Bingo (1 - ${totalItems})` : `Word Bingo (${totalItems} Words)`;
+            if (appState.gameType === 'number') {
+                document.getElementById('game-mode-indicator').innerText = `Number Bingo (1 - 75)`;
+                grid.style.gridTemplateColumns = `repeat(5, minmax(0, 1fr))`;
 
-            let cols = appState.gameType === 'number' ? 10 : 4;
-            grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(50px, 1fr))`;
+                let html = '';
+                const letters = ['B', 'I', 'N', 'G', 'O'];
+                letters.forEach(letter => {
+                    html += `<div class="bg-indigo-600 text-white text-center font-bold py-2 rounded-xl text-sm shadow">${letter}</div>`;
+                });
 
-            let html = '';
-            for (let i = 0; i < totalItems; i++) {
-                let item = appState.gameType === 'number' ? (i + 1) : appState.wordPool[i];
-                let isDrawn = appState.draw.drawn.includes(item);
-                let isCurrent = appState.draw.current === item;
+                // 15 rows across 5 columns (B: 1-15, I: 16-30, N: 31-45, G: 46-60, O: 61-75)
+                for (let r = 0; r < 15; r++) {
+                    let nums = [r + 1, r + 16, r + 31, r + 46, r + 61];
+                    nums.forEach(num => {
+                        let isDrawn = appState.draw.drawn.includes(num);
+                        let isCurrent = appState.draw.current === num;
 
-                let cls = 'aspect-square rounded-xl flex items-center justify-center font-bold text-xs transition shadow-sm ';
-                if (isCurrent) {
-                    cls += 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white ring-4 ring-indigo-400 scale-105 animate-pulse';
-                } else if (isDrawn) {
-                    cls += 'bg-emerald-600 text-white shadow-emerald-600/30';
-                } else {
-                    cls += 'bg-slate-900 text-slate-400 border border-slate-700 hover:border-slate-500';
+                        let cls = 'aspect-square rounded-xl flex flex-col items-center justify-center font-bold text-xs transition shadow-sm ';
+                        if (isCurrent) {
+                            cls += 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white ring-4 ring-indigo-400 scale-105 animate-pulse';
+                        } else if (isDrawn) {
+                            cls += 'bg-emerald-600 text-white shadow-emerald-600/30';
+                        } else {
+                            cls += 'bg-slate-900 text-slate-400 border border-slate-700 hover:border-slate-500';
+                        }
+
+                        let letter = getBingoLetter(num);
+                        html += `<div class="${cls}">
+                            <span class="text-[9px] opacity-75">${letter}</span>
+                            <span>${num}</span>
+                        </div>`;
+                    });
                 }
+                grid.innerHTML = html;
+            } else {
+                const totalItems = appState.wordPool.length;
+                document.getElementById('game-mode-indicator').innerText = `Word Bingo (${totalItems} Words)`;
+                grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(50px, 1fr))`;
 
-                html += `<div class="${cls}">${item}</div>`;
+                let html = '';
+                for (let i = 0; i < totalItems; i++) {
+                    let item = appState.wordPool[i];
+                    let isDrawn = appState.draw.drawn.includes(item);
+                    let isCurrent = appState.draw.current === item;
+
+                    let cls = 'aspect-square rounded-xl flex items-center justify-center font-bold text-xs transition shadow-sm ';
+                    if (isCurrent) {
+                        cls += 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white ring-4 ring-indigo-400 scale-105 animate-pulse';
+                    } else if (isDrawn) {
+                        cls += 'bg-emerald-600 text-white shadow-emerald-600/30';
+                    } else {
+                        cls += 'bg-slate-900 text-slate-400 border border-slate-700 hover:border-slate-500';
+                    }
+
+                    html += `<div class="${cls}">${item}</div>`;
+                }
+                grid.innerHTML = html;
             }
-            grid.innerHTML = html;
         }
 
         function drawNextBall() {
@@ -845,7 +923,12 @@
             appState.draw.current = drawnItem;
 
             // Update UI
-            document.getElementById('current-ball-prefix').innerText = appState.gameType === 'number' ? 'BALL' : 'WORD';
+            if (appState.gameType === 'number') {
+                const letter = getBingoLetter(drawnItem);
+                document.getElementById('current-ball-prefix').innerText = letter;
+            } else {
+                document.getElementById('current-ball-prefix').innerText = 'WORD';
+            }
             document.getElementById('current-ball-number').innerText = drawnItem;
             document.getElementById('current-ball-subtitle').innerText = `Drawn at ${new Date().toLocaleTimeString()}`;
 
@@ -861,8 +944,14 @@
 
         function showZoomModal(item) {
             const modal = document.getElementById('zoom-modal');
-            document.getElementById('modal-ball-text').innerText = item;
-            document.getElementById('modal-ball-desc').innerText = `${appState.gameType === 'number' ? 'Number' : 'Word'} "${item}" has been drawn successfully!`;
+            if (appState.gameType === 'number') {
+                const letter = getBingoLetter(item);
+                document.getElementById('modal-ball-text').innerText = `${letter}-${item}`;
+                document.getElementById('modal-ball-desc').innerText = `Ball ${letter}-${item} has been drawn successfully!`;
+            } else {
+                document.getElementById('modal-ball-text').innerText = item;
+                document.getElementById('modal-ball-desc').innerText = `Word "${item}" has been drawn successfully!`;
+            }
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
@@ -1004,14 +1093,3 @@
             if (!styleEl) {
                 styleEl = document.createElement('style');
                 styleEl.id = 'dynamic-bg-style';
-                document.head.appendChild(styleEl);
-            }
-            if (appState.bgImage) {
-                styleEl.innerHTML = `.custom-card-bg { background-image: url('${appState.bgImage}'); background-size: cover; background-position: center; }`;
-            } else {
-                styleEl.innerHTML = `.custom-card-bg { background-image: none; }`;
-            }
-        }
-    </script>
-</body>
-</html>
