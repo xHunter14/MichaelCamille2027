@@ -671,7 +671,7 @@
 
             // Grid Cells
             const size = appState.gridSize;
-            html += `<div class="grid grid-cols-${size} gap-1.5 my-3 flex-1">`;
+            html += `<div class="grid gap-1.5 my-3 flex-1" style="display: grid; grid-template-columns: repeat(${size}, minmax(0, 1fr));">`;
             
             card.cells.forEach(val => {
                 const isFree = val === 'FREE';
@@ -746,7 +746,7 @@
                                     <h3 class="font-bold tracking-widest text-xl" style="color: ${appState.borderColor};">${appState.headerText}</h3>
                                 </div>
 
-                                <div class="grid grid-cols-${appState.gridSize} gap-1 my-2 flex-1">
+                                <div class="grid gap-1 my-2 flex-1" style="display: grid; grid-template-columns: repeat(${appState.gridSize}, minmax(0, 1fr));">
                     `;
 
                     card.cells.forEach(val => {
