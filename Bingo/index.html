@@ -1093,3 +1093,14 @@
             if (!styleEl) {
                 styleEl = document.createElement('style');
                 styleEl.id = 'dynamic-bg-style';
+                document.head.appendChild(styleEl);
+            }
+            if (appState.bgImage) {
+                styleEl.innerHTML = `.custom-card-bg { background-image: url('${appState.bgImage}'); background-size: cover; background-position: center; }`;
+            } else {
+                styleEl.innerHTML = `.custom-card-bg { background-image: none; }`;
+            }
+        }
+    </script>
+</body>
+</html>
